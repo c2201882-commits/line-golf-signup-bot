@@ -1,36 +1,56 @@
-function sortByDate(a, b) {
-  const [am, ad] = a.split("/").map(Number);
-  const [bm, bd] = b.split("/").map(Number);
-  return am - bm || ad - bd;
+function sortByDateKey(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
 }
 
-function formatSummary(month, mKey) {
-  const dates = Object.keys(month).sort(sortByDate);
-  if (dates.length === 0) {
-    return `本月（${mKey}）目前還沒有人報名喔，輸入「9/3 +你的名字」就可以報名了！`;
+function displayDate(dateKey) {
+  const [, m, d] = dateKey.split("-");
+  return `${Number(m)}/${Number(d)}`;
+}
+
+function formatSummary(month, mKey, liffUrl) {
+  const days = (month && month.days) || {};
+  const dateKeys = Object.keys(days)
+    .filter((k) => Object.keys(days[k].entries || {}).length > 0)
+    .sort(sortByDateKey);
+
+  const openLine = liffUrl ? `\n\n👉 打開報名頁：${liffUrl}` : "";
+
+  if (dateKeys.length === 0) {
+    return `本月（${mKey}）目前還沒有人報名喔！${openLine || "輸入「9/3 +你的名字」就可以報名了。"}`;
   }
 
   const lines = [`⛳ 本月球局彙整（${mKey}）`, ""];
-  for (const date of dates) {
-    const day = month[date];
+  for (const dateKey of dateKeys) {
+    const day = days[dateKey];
+    const entries = Object.values(day.entries || {});
+    const totalCount = entries.reduce((sum, e) => sum + (e.count || 1), 0);
+    const names = entries.length
+      ? entries.map((e) => (e.count > 1 ? `${e.displayName}x${e.count}` : e.displayName)).join(" ")
+      : "（尚無人報名）";
+
     const parts = [];
-    if (day.note) parts.push(day.note);
-    const names = day.names.length ? day.names.join(" ") : "（尚無人報名）";
+    if (day.course) parts.push(day.course);
+    if (day.teeTime) parts.push(day.teeTime);
     parts.push(names);
+
     let countTag = "";
     if (day.max) {
-      countTag = day.names.length >= day.max ? " 🈵滿" : ` (${day.names.length}/${day.max})`;
-    } else if (day.names.length) {
-      countTag = ` — ${day.names.length}`;
+      countTag = totalCount >= day.max ? " 🈵滿" : ` (${totalCount}/${day.max})`;
+    } else if (totalCount) {
+      countTag = ` — ${totalCount} 人`;
     }
-    lines.push(`『${date}』：${parts.join(" ")}${countTag}`);
+    lines.push(`『${displayDate(dateKey)}』：${parts.join(" ")}${countTag}`);
   }
+  if (liffUrl) lines.push(openLine);
   return lines.join("\n");
 }
 
 const HELP_TEXT = `⛳ 球局報名機器人使用說明
 
-【報名】
+【網頁報名，推薦】
+點選下方「開啟報名頁」，用你的 LINE 身份直接選日期、填人數，也能幫朋友多報名額。
+
+【文字報名，仍可使用】
 9/3 +David
 一行一個日期，+名字 表示報名，可以一行打多個人：
 9/3 +David +Roy +KW
@@ -49,8 +69,15 @@ const HELP_TEXT = `⛳ 球局報名機器人使用說明
 
 一天只會開一團，重複輸入同一人不會重複計算。`;
 
-const MENU_QUICK_REPLY = {
-  items: [
+function buildMenuQuickReply(liffUrl) {
+  const items = [];
+  if (liffUrl) {
+    items.push({
+      type: "action",
+      action: { type: "uri", label: "開啟報名頁", uri: liffUrl },
+    });
+  }
+  items.push(
     {
       type: "action",
       action: { type: "message", label: "查詢本月彙整", text: "查詢" },
@@ -58,8 +85,9 @@ const MENU_QUICK_REPLY = {
     {
       type: "action",
       action: { type: "message", label: "使用教學", text: "help" },
-    },
-  ],
-};
+    }
+  );
+  return { items };
+}
 
-module.exports = { formatSummary, HELP_TEXT, MENU_QUICK_REPLY };
+module.exports = { formatSummary, HELP_TEXT, buildMenuQuickReply };

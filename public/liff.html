@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>高爾夫開團表</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+:root {
+  --bg: #f5f3e9;
+  --surface: #ffffff;
+  --surface-2: #eee9d9;
+  --border: #ddd7c2;
+  --text: #1e2a20;
+  --muted: #6d7566;
+  --accent: #2f6f4a;
+  --accent-strong: #1f5136;
+  --accent-soft: #dfeee1;
+  --gold: #b8791f;
+  --gold-soft: #f3e4c6;
+  --danger: #a3402f;
+  --shadow: rgba(30, 42, 32, 0.08);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10150f; --surface: #182019; --surface-2: #1f281f; --border: #2b352b;
+    --text: #eef0e6; --muted: #9aa593; --accent: #6fcf9a; --accent-strong: #8fe0b3;
+    --accent-soft: #22352a; --gold: #e3b15c; --gold-soft: #3a2f19; --danger: #e18a75;
+    --shadow: rgba(0, 0, 0, 0.35);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10150f; --surface: #182019; --surface-2: #1f281f; --border: #2b352b;
+  --text: #eef0e6; --muted: #9aa593; --accent: #6fcf9a; --accent-strong: #8fe0b3;
+  --accent-soft: #22352a; --gold: #e3b15c; --gold-soft: #3a2f19; --danger: #e18a75;
+  --shadow: rgba(0, 0, 0, 0.35);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: "Public Sans", -apple-system, "Segoe UI", sans-serif;
+  min-height: 100vh; -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 760px; margin: 0 auto; padding: 28px 16px 72px; }
+
+header.top {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 14px; margin-bottom: 8px; padding-bottom: 18px; border-bottom: 1px solid var(--border);
+}
+.eyebrow {
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--accent-strong); margin: 0 0 4px;
+}
+.month-row { display: flex; align-items: center; gap: 10px; }
+h1 {
+  font-family: "Fraunces", Georgia, serif; font-weight: 600;
+  font-size: clamp(22px, 6vw, 30px); margin: 0; text-wrap: balance; letter-spacing: -0.01em;
+}
+.month-nav {
+  display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+  border-radius: 50%; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text); font-size: 15px; cursor: pointer; flex-shrink: 0;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.month-nav:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.month-nav:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.me {
+  display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted);
+}
+.me img { width: 26px; height: 26px; border-radius: 50%; }
+
+.status-line {
+  font-size: 12.5px; color: var(--muted); margin: 14px 0 24px; display: flex; align-items: center; gap: 8px;
+}
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.dot.offline { background: var(--danger); }
+
+section.summary {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  padding: 18px 18px; margin-bottom: 26px; box-shadow: 0 1px 2px var(--shadow);
+}
+section.summary h2 { font-family: "Fraunces", serif; font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+.summary .sub { font-size: 12.5px; color: var(--muted); margin: 0 0 14px; }
+.confirmed-list { display: flex; flex-direction: column; gap: 10px; }
+.confirmed-row {
+  display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 10px;
+  background: var(--gold-soft); border: 1px solid var(--border);
+}
+.confirmed-row .headline { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.confirmed-row .rank { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--gold); font-weight: 600; width: 18px; flex-shrink: 0; }
+.confirmed-row .date-label { font-family: "Fraunces", serif; font-weight: 600; font-size: 15px; flex-shrink: 0; }
+.confirmed-row .players { font-size: 12.5px; color: var(--muted); flex: 1; min-width: 100px; overflow-wrap: anywhere; }
+.confirmed-row .count { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; font-weight: 600; color: var(--accent-strong); flex-shrink: 0; }
+.confirmed-row .fields { display: grid; grid-template-columns: 1fr 120px; gap: 8px; }
+.confirmed-row .fields input {
+  font-family: inherit; font-size: 13px; padding: 7px 9px; border-radius: 7px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); outline: none; width: 100%; transition: border-color 0.15s ease;
+}
+.confirmed-row .fields input:focus { border-color: var(--accent); }
+.confirmed-row .fields input::placeholder { color: var(--muted); }
+@media (max-width: 460px) { .confirmed-row .fields { grid-template-columns: 1fr; } }
+.empty-note { font-size: 12.5px; color: var(--muted); font-style: italic; }
+
+.cal-weekday-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 6px; }
+.cal-weekday-row span {
+  text-align: center; font-family: "IBM Plex Mono", monospace; font-size: 10.5px;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+}
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.day-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 7px 5px 6px; display: flex; flex-direction: column; gap: 4px; min-height: 78px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.day-card.empty { background: transparent; border: none; }
+.day-card.voted { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.day-card.weekend .daynum { color: var(--accent-strong); }
+.day-card .daynum { font-family: "Fraunces", serif; font-size: 16px; font-weight: 600; line-height: 1; }
+.day-card .count-badge {
+  font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 600; color: var(--accent-strong);
+  background: var(--accent-soft); border-radius: 999px; padding: 1px 6px; align-self: flex-start;
+}
+.day-card .count-badge.zero { color: var(--muted); background: var(--surface-2); }
+.day-card button.toggle {
+  margin-top: auto; font-family: "Public Sans", sans-serif; font-weight: 600; font-size: 11px;
+  padding: 5px 4px; border-radius: 6px; border: 1px solid var(--accent); background: transparent;
+  color: var(--accent-strong); cursor: pointer; transition: background 0.15s ease, color 0.15s ease;
+}
+.day-card button.toggle:hover { background: var(--accent-soft); }
+.day-card.voted button.toggle { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+.day-card.voted button.toggle:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
+
+/* headcount picker sheet */
+.sheet-backdrop {
+  position: fixed; inset: 0; background: rgba(16, 21, 15, 0.45); display: none;
+  align-items: flex-end; justify-content: center; z-index: 50;
+}
+.sheet-backdrop.open { display: flex; }
+.sheet {
+  background: var(--surface); border-radius: 18px 18px 0 0; padding: 22px 20px calc(22px + env(safe-area-inset-bottom));
+  width: 100%; max-width: 480px; box-shadow: 0 -4px 24px var(--shadow);
+}
+.sheet h3 { font-family: "Fraunces", serif; font-size: 17px; margin: 0 0 4px; }
+.sheet .sheet-sub { font-size: 12.5px; color: var(--muted); margin: 0 0 18px; }
+.stepper { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 20px; }
+.stepper button {
+  width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text); font-size: 20px; cursor: pointer; line-height: 1;
+}
+.stepper button:hover { border-color: var(--accent); }
+.stepper .count-display {
+  font-family: "Fraunces", serif; font-size: 30px; font-weight: 600; min-width: 48px; text-align: center;
+}
+.sheet-actions { display: flex; gap: 10px; }
+.sheet-actions button {
+  flex: 1; font-family: "Public Sans", sans-serif; font-weight: 700; font-size: 14px;
+  padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid transparent;
+}
+.sheet-actions .primary { background: var(--accent); color: var(--surface); }
+.sheet-actions .primary:hover { background: var(--accent-strong); }
+.sheet-actions .ghost { background: transparent; border-color: var(--border); color: var(--text); }
+.sheet-actions .ghost:hover { border-color: var(--danger); color: var(--danger); }
+
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-align: center; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow" id="cycle-label">開放投票</p>
+      <div class="month-row">
+        <button class="month-nav" id="prev-month" type="button" aria-label="上個月">‹</button>
+        <h1 id="month-title">載入中…</h1>
+        <button class="month-nav" id="next-month" type="button" aria-label="下個月">›</button>
+      </div>
+    </div>
+    <div class="me" id="me-box">連接 LINE 中…</div>
+  </header>
+
+  <p class="status-line"><span class="dot" id="conn-dot"></span><span id="conn-text">連線中…</span></p>
+
+  <section class="summary">
+    <h2>本月開團球局</h2>
+    <p class="sub">任何有人報名的日期即成團，依人數由高到低排列</p>
+    <div class="confirmed-list" id="confirmed-list">
+      <p class="empty-note">目前還沒有人報名</p>
+    </div>
+  </section>
+
+  <div id="calendar"></div>
+
+  <footer class="note">報名即時同步給所有人 · 可以幫朋友一起報名</footer>
+</div>
+
+<div class="sheet-backdrop" id="sheet-backdrop">
+  <div class="sheet">
+    <h3 id="sheet-title">選擇人數</h3>
+    <p class="sheet-sub" id="sheet-sub"></p>
+    <div class="stepper">
+      <button type="button" id="step-minus" aria-label="減少">−</button>
+      <span class="count-display" id="step-count">1</span>
+      <button type="button" id="step-plus" aria-label="增加">+</button>
+    </div>
+    <div class="sheet-actions">
+      <button type="button" class="ghost" id="sheet-cancel">取消</button>
+      <button type="button" class="primary" id="sheet-save">儲存報名</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const WEEKDAY_NAMES = ["日", "一", "二", "三", "四", "五", "六"];
+  function pad(n) { return String(n).padStart(2, "0"); }
+
+  function computeFloorMonth() {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() };
+  }
+  function computeDefaultMonth() {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    return m === 11 ? { year: y + 1, month: 0 } : { year: y, month: m + 1 };
+  }
+  function buildMonthDates(year, month) {
+    const dates = [];
+    const d = new Date(year, month, 1);
+    while (d.getMonth() === month) {
+      dates.push({ key: `${year}-${pad(month + 1)}-${pad(d.getDate())}`, day: d.getDate(), dow: d.getDay() });
+      d.setDate(d.getDate() + 1);
+    }
+    return dates;
+  }
+
+  const params = new URLSearchParams(location.search);
+  let groupId = params.get("groupId");
+
+  const floorMonth = computeFloorMonth();
+  let target = computeDefaultMonth();
+  let monthKey, monthDates, daysData = {};
+
+  function setupMonthState() {
+    monthKey = `${target.year}-${target.month + 1}`;
+    monthDates = buildMonthDates(target.year, target.month);
+  }
+  setupMonthState();
+
+  const calendarEl = document.getElementById("calendar");
+  const confirmedEl = document.getElementById("confirmed-list");
+  const connDot = document.getElementById("conn-dot");
+  const connText = document.getElementById("conn-text");
+  const meBox = document.getElementById("me-box");
+  const prevBtn = document.getElementById("prev-month");
+  const nextBtn = document.getElementById("next-month");
+  const cycleLabel = document.getElementById("cycle-label");
+
+  function isAtFloor() { return target.year === floorMonth.year && target.month === floorMonth.month; }
+
+  function updateHeader() {
+    document.getElementById("month-title").textContent = `${target.year} 年 ${target.month + 1} 月`;
+    const def = computeDefaultMonth();
+    cycleLabel.textContent = (target.year === def.year && target.month === def.month) ? "開放投票（下個月）" : "開放投票";
+    prevBtn.disabled = isAtFloor();
+  }
+
+  function changeMonth(delta) {
+    let y = target.year, m = target.month + delta;
+    if (m < 0) { m = 11; y -= 1; }
+    if (m > 11) { m = 0; y += 1; }
+    if (y < floorMonth.year || (y === floorMonth.year && m < floorMonth.month)) return;
+    target = { year: y, month: m };
+    setupMonthState();
+    updateHeader();
+    loadState();
+  }
+  prevBtn.addEventListener("click", () => changeMonth(-1));
+  nextBtn.addEventListener("click", () => changeMonth(1));
+
+  function dateLabel(dt) { return `${target.month + 1}/${dt.day} (${WEEKDAY_NAMES[dt.dow]})`; }
+
+  function dayEntries(dateKey) {
+    const day = daysData[dateKey];
+    return day && day.entries ? Object.entries(day.entries) : [];
+  }
+  function dayCount(dateKey) {
+    return dayEntries(dateKey).reduce((sum, [, e]) => sum + (e.count || 1), 0);
+  }
+  function myEntryCount(dateKey) {
+    const entries = daysData[dateKey] && daysData[dateKey].entries;
+    const mine = entries && entries["line:" + myUserId];
+    return mine ? mine.count : 0;
+  }
+
+  function render() {
+    calendarEl.innerHTML = "";
+    const weekdayRow = document.createElement("div");
+    weekdayRow.className = "cal-weekday-row";
+    WEEKDAY_NAMES.forEach((w) => {
+      const s = document.createElement("span"); s.textContent = w; weekdayRow.appendChild(s);
+    });
+    calendarEl.appendChild(weekdayRow);
+
+    const grid = document.createElement("div");
+    grid.className = "cal-grid";
+    for (let i = 0; i < monthDates[0].dow; i++) {
+      const blank = document.createElement("div"); blank.className = "day-card empty"; grid.appendChild(blank);
+    }
+
+    monthDates.forEach((dt) => {
+      const count = dayCount(dt.key);
+      const iVoted = myEntryCount(dt.key) > 0;
+      const isWeekend = dt.dow === 0 || dt.dow === 6;
+
+      const card = document.createElement("div");
+      card.className = "day-card" + (iVoted ? " voted" : "") + (isWeekend ? " weekend" : "");
+
+      const num = document.createElement("span");
+      num.className = "daynum"; num.textContent = dt.day;
+
+      const badge = document.createElement("span");
+      badge.className = "count-badge" + (count === 0 ? " zero" : "");
+      badge.textContent = count === 0 ? "無人報名" : `${count} 人`;
+
+      const btn = document.createElement("button");
+      btn.className = "toggle";
+      btn.textContent = iVoted ? "編輯" : "報名";
+      btn.addEventListener("click", () => openSheet(dt.key));
+
+      card.appendChild(num); card.appendChild(badge); card.appendChild(btn);
+      grid.appendChild(card);
+    });
+    calendarEl.appendChild(grid);
+    renderConfirmed();
+  }
+
+  function renderConfirmed() {
+    const rows = monthDates
+      .map((dt) => ({ dt, count: dayCount(dt.key), entries: dayEntries(dt.key) }))
+      .filter((r) => r.count > 0)
+      .sort((a, b) => b.count - a.count || a.dt.day - b.dt.day);
+
+    confirmedEl.innerHTML = "";
+    if (rows.length === 0) {
+      const p = document.createElement("p"); p.className = "empty-note"; p.textContent = "目前還沒有人報名";
+      confirmedEl.appendChild(p); return;
+    }
+
+    rows.forEach((r, i) => {
+      const row = document.createElement("div"); row.className = "confirmed-row";
+      const headline = document.createElement("div"); headline.className = "headline";
+      const rank = document.createElement("span"); rank.className = "rank"; rank.textContent = "#" + (i + 1);
+      const dl = document.createElement("span"); dl.className = "date-label"; dl.textContent = dateLabel(r.dt);
+      const pl = document.createElement("span"); pl.className = "players";
+      pl.textContent = r.entries.map(([, e]) => (e.count > 1 ? `${e.displayName}x${e.count}` : e.displayName)).join("、");
+      const ct = document.createElement("span"); ct.className = "count"; ct.textContent = `${r.count} 人`;
+      headline.appendChild(rank); headline.appendChild(dl); headline.appendChild(pl); headline.appendChild(ct);
+
+      const fields = document.createElement("div"); fields.className = "fields";
+      const day = daysData[r.dt.key] || {};
+      const courseInput = document.createElement("input");
+      courseInput.type = "text"; courseInput.placeholder = "球場名稱"; courseInput.maxLength = 60;
+      courseInput.value = day.course || "";
+      courseInput.addEventListener("change", () => saveSession(r.dt.key, { course: courseInput.value.trim() }));
+      const timeInput = document.createElement("input");
+      timeInput.type = "text"; timeInput.placeholder = "開球時間"; timeInput.maxLength = 20;
+      timeInput.value = day.teeTime || "";
+      timeInput.addEventListener("change", () => saveSession(r.dt.key, { teeTime: timeInput.value.trim() }));
+      fields.appendChild(courseInput); fields.appendChild(timeInput);
+
+      row.appendChild(headline); row.appendChild(fields);
+      confirmedEl.appendChild(row);
+    });
+  }
+
+  // ---- headcount sheet ----
+  const backdrop = document.getElementById("sheet-backdrop");
+  const sheetTitle = document.getElementById("sheet-title");
+  const sheetSub = document.getElementById("sheet-sub");
+  const stepCount = document.getElementById("step-count");
+  let sheetDateKey = null;
+  let sheetCount = 1;
+
+  function openSheet(dateKey) {
+    sheetDateKey = dateKey;
+    sheetCount = Math.max(1, myEntryCount(dateKey) || 1);
+    stepCount.textContent = sheetCount;
+    const dt = monthDates.find((d) => d.key === dateKey);
+    sheetTitle.textContent = `${target.month + 1}/${dt.day} 報名人數`;
+    sheetSub.textContent = "包含你自己 + 你要幫忙報名的朋友人數";
+    backdrop.classList.add("open");
+  }
+  function closeSheet() { backdrop.classList.remove("open"); sheetDateKey = null; }
+
+  document.getElementById("step-minus").addEventListener("click", () => {
+    sheetCount = Math.max(1, sheetCount - 1); stepCount.textContent = sheetCount;
+  });
+  document.getElementById("step-plus").addEventListener("click", () => {
+    sheetCount = Math.min(20, sheetCount + 1); stepCount.textContent = sheetCount;
+  });
+  document.getElementById("sheet-cancel").addEventListener("click", () => {
+    if (sheetDateKey && myEntryCount(sheetDateKey) > 0) submitVote(sheetDateKey, 0);
+    closeSheet();
+  });
+  document.getElementById("sheet-save").addEventListener("click", () => {
+    if (sheetDateKey) submitVote(sheetDateKey, sheetCount);
+    closeSheet();
+  });
+  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeSheet(); });
+
+  let myUserId = null;
+  let idToken = null;
+
+  async function submitVote(dateKey, count) {
+    try {
+      const res = await fetch("/api/vote", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, groupId, month: monthKey, date: dateKey, count }),
+      });
+      const data = await res.json();
+      if (res.ok) { daysData = data.days; render(); }
+      else connText.textContent = "報名失敗：" + (data.error || "請重試");
+    } catch (e) { connText.textContent = "網路異常，請重試"; }
+  }
+
+  async function saveSession(dateKey, patch) {
+    try {
+      const res = await fetch("/api/session", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, groupId, month: monthKey, date: dateKey, ...patch }),
+      });
+      const data = await res.json();
+      if (res.ok) { daysData = data.days; render(); }
+    } catch (e) {}
+  }
+
+  async function loadState() {
+    if (!groupId) return;
+    try {
+      const res = await fetch(`/api/state?groupId=${encodeURIComponent(groupId)}&month=${encodeURIComponent(monthKey)}`);
+      const data = await res.json();
+      daysData = data.days || {};
+      connText.textContent = "已連線";
+      connDot.classList.remove("offline");
+    } catch (e) {
+      connText.textContent = "連線失敗，稍後重試";
+      connDot.classList.add("offline");
+    }
+    render();
+  }
+
+  async function init() {
+    updateHeader();
+    render();
+    try {
+      const cfgRes = await fetch("/api/config");
+      const cfg = await cfgRes.json();
+      if (!cfg.liffId) throw new Error("LIFF_ID not configured");
+
+      await liff.init({ liffId: cfg.liffId });
+      if (!liff.isLoggedIn()) { liff.login(); return; }
+
+      idToken = liff.getIDToken();
+      const profile = await liff.getProfile();
+      myUserId = profile.userId;
+
+      meBox.innerHTML = "";
+      const img = document.createElement("img"); img.src = profile.pictureUrl || "";
+      const name = document.createElement("span"); name.textContent = profile.displayName;
+      if (profile.pictureUrl) meBox.appendChild(img);
+      meBox.appendChild(name);
+
+      if (!groupId) groupId = "user:" + myUserId; // opened outside a group — personal board fallback
+
+      await loadState();
+    } catch (e) {
+      connText.textContent = "無法連接 LINE，僅供預覽";
+      connDot.classList.add("offline");
+      meBox.textContent = "未連接 LINE";
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

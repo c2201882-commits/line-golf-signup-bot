@@ -1,9 +1,18 @@
-// Simple JSON-file storage, keyed by group and month.
+// JSON-file storage, keyed by group and month.
 // Shape:
 // {
 //   "<groupId>": {
-//     "2026-9": {
-//       "9/3": { note: "長庚5:50", max: 4, names: ["David", "KW"] }
+//     "2026-10": {
+//       days: {
+//         "2026-10-03": {
+//           course: "長庚",
+//           teeTime: "5:50",
+//           entries: {
+//             "line:<lineUserId>": { displayName, count, updatedAt },
+//             "name:<slug>": { displayName, count, updatedAt }   // legacy text sign-ups with no LINE identity
+//           }
+//         }
+//       }
 //     }
 //   }
 // }
@@ -30,30 +39,56 @@ function monthKey(date = new Date()) {
   return `${date.getFullYear()}-${date.getMonth() + 1}`;
 }
 
-function getMonth(groupId, mKey = monthKey()) {
-  const data = load();
-  return (data[groupId] && data[groupId][mKey]) || {};
+function pad(n) {
+  return String(n).padStart(2, "0");
 }
 
-function applyEntries(groupId, entries, mKey = monthKey()) {
+// mKey: "YYYY-M" (from monthKey()); mdDate: "M/D" (from parser.js). -> "YYYY-MM-DD"
+function canonicalDate(mKey, mdDate) {
+  const [year] = mKey.split("-");
+  const [m, d] = mdDate.split("/");
+  return `${year}-${pad(m)}-${pad(d)}`;
+}
+
+function nameSlug(name) {
+  return "name:" + name.trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+function lineKey(lineUserId) {
+  return "line:" + lineUserId;
+}
+
+function getMonth(groupId, mKey = monthKey()) {
+  const data = load();
+  return (data[groupId] && data[groupId][mKey]) || { days: {} };
+}
+
+function ensureDay(month, date) {
+  if (!month.days[date]) month.days[date] = { course: "", teeTime: "", entries: {} };
+  return month.days[date];
+}
+
+// Legacy text-command entry point: `entries` is the array parser.parseMessage() returns.
+// `dateToKey(entry.date)` converts a parsed "9/3" string into the canonical "YYYY-MM-DD" key.
+function applyEntries(groupId, entries, mKey, dateToKey) {
   const data = load();
   if (!data[groupId]) data[groupId] = {};
-  if (!data[groupId][mKey]) data[groupId][mKey] = {};
+  if (!data[groupId][mKey]) data[groupId][mKey] = { days: {} };
   const month = data[groupId][mKey];
 
   for (const entry of entries) {
-    const { date, note, max, adds, removes } = entry;
-    if (!month[date]) month[date] = { note: null, max: null, names: [] };
-    const day = month[date];
+    const dateKey = dateToKey(entry.date);
+    const day = ensureDay(month, dateKey);
 
-    if (note) day.note = note;
-    if (max !== null && max !== undefined) day.max = max;
+    if (entry.note) day.course = entry.note;
+    if (entry.max !== null && entry.max !== undefined) day.max = entry.max;
 
-    for (const name of adds) {
-      if (!day.names.includes(name)) day.names.push(name);
+    for (const name of entry.adds) {
+      const key = nameSlug(name);
+      day.entries[key] = { displayName: name, count: 1, updatedAt: Date.now() };
     }
-    for (const name of removes) {
-      day.names = day.names.filter((n) => n !== name);
+    for (const name of entry.removes) {
+      delete day.entries[nameSlug(name)];
     }
   }
 
@@ -61,4 +96,48 @@ function applyEntries(groupId, entries, mKey = monthKey()) {
   return month;
 }
 
-module.exports = { load, save, monthKey, getMonth, applyEntries };
+// Web sign-up entry point: set (or clear, when count <= 0) one person's headcount for a date.
+function setVote(groupId, mKey, dateKey, { lineUserId, displayName, count }) {
+  const data = load();
+  if (!data[groupId]) data[groupId] = {};
+  if (!data[groupId][mKey]) data[groupId][mKey] = { days: {} };
+  const month = data[groupId][mKey];
+  const day = ensureDay(month, dateKey);
+  const key = lineKey(lineUserId);
+
+  if (!count || count <= 0) {
+    delete day.entries[key];
+  } else {
+    day.entries[key] = { displayName, count, updatedAt: Date.now() };
+  }
+
+  save(data);
+  return month;
+}
+
+function setSession(groupId, mKey, dateKey, { course, teeTime }) {
+  const data = load();
+  if (!data[groupId]) data[groupId] = {};
+  if (!data[groupId][mKey]) data[groupId][mKey] = { days: {} };
+  const month = data[groupId][mKey];
+  const day = ensureDay(month, dateKey);
+
+  if (course !== undefined) day.course = course;
+  if (teeTime !== undefined) day.teeTime = teeTime;
+
+  save(data);
+  return month;
+}
+
+module.exports = {
+  load,
+  save,
+  monthKey,
+  canonicalDate,
+  getMonth,
+  applyEntries,
+  setVote,
+  setSession,
+  nameSlug,
+  lineKey,
+};
