@@ -226,8 +226,7 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
   }
   function computeDefaultMonth() {
     const now = new Date();
-    const y = now.getFullYear(), m = now.getMonth();
-    return m === 11 ? { year: y + 1, month: 0 } : { year: y, month: m + 1 };
+    return { year: now.getFullYear(), month: now.getMonth() };
   }
   function buildMonthDates(year, month) {
     const dates = [];
@@ -266,7 +265,7 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
   function updateHeader() {
     document.getElementById("month-title").textContent = `${target.year} 年 ${target.month + 1} 月`;
     const def = computeDefaultMonth();
-    cycleLabel.textContent = (target.year === def.year && target.month === def.month) ? "開放投票（下個月）" : "開放投票";
+    cycleLabel.textContent = (target.year === def.year && target.month === def.month) ? "開放投票（本月）" : "開放投票";
     prevBtn.disabled = isAtFloor();
   }
 
@@ -278,6 +277,7 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
     target = { year: y, month: m };
     setupMonthState();
     updateHeader();
+    lastStateJson = null;
     loadState();
   }
   prevBtn.addEventListener("click", () => changeMonth(-1));
@@ -396,7 +396,11 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
     sheetSub.textContent = "包含你自己 + 你要幫忙報名的朋友人數";
     backdrop.classList.add("open");
   }
-  function closeSheet() { backdrop.classList.remove("open"); sheetDateKey = null; }
+  function closeSheet() {
+    backdrop.classList.remove("open");
+    sheetDateKey = null;
+    if (pendingRender) { pendingRender = false; render(); }
+  }
 
   document.getElementById("step-minus").addEventListener("click", () => {
     sheetCount = Math.max(1, sheetCount - 1); stepCount.textContent = sheetCount;
@@ -440,20 +444,45 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
     } catch (e) {}
   }
 
-  async function loadState() {
+  let lastStateJson = null;
+
+  async function loadState({ silent } = {}) {
     if (!groupId) return;
     try {
       const res = await fetch(`/api/state?groupId=${encodeURIComponent(groupId)}&month=${encodeURIComponent(monthKey)}`);
       const data = await res.json();
-      daysData = data.days || {};
+      const json = JSON.stringify(data.days || {});
       connText.textContent = "已連線";
       connDot.classList.remove("offline");
+
+      if (json === lastStateJson) return; // nothing changed — skip re-render so open inputs/sheet aren't disturbed
+      lastStateJson = json;
+      daysData = data.days || {};
+
+      // Don't yank focus away from a field the viewer is actively typing in, or close an open headcount sheet.
+      const activeTag = document.activeElement && document.activeElement.tagName;
+      if (sheetDateKey || activeTag === "INPUT") { pendingRender = true; return; }
+      render();
     } catch (e) {
-      connText.textContent = "連線失敗，稍後重試";
-      connDot.classList.add("offline");
+      if (!silent) {
+        connText.textContent = "連線失敗，稍後重試";
+        connDot.classList.add("offline");
+      }
     }
-    render();
   }
+
+  let pendingRender = false;
+  let pollTimer = null;
+  function startPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(() => loadState({ silent: true }), 4000);
+  }
+  document.addEventListener("focusout", () => {
+    setTimeout(() => {
+      const activeTag = document.activeElement && document.activeElement.tagName;
+      if (pendingRender && !sheetDateKey && activeTag !== "INPUT") { pendingRender = false; render(); }
+    }, 0);
+  });
 
   async function init() {
     updateHeader();
@@ -479,6 +508,7 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
       if (!groupId) groupId = "user:" + myUserId; // opened outside a group — personal board fallback
 
       await loadState();
+      startPolling();
     } catch (e) {
       connText.textContent = "無法連接 LINE，僅供預覽";
       connDot.classList.add("offline");
