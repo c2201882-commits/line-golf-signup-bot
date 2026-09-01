@@ -512,9 +512,25 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
   backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeSheet(); });
 
   let myUserId = null;
-  let idToken = null;
+  let liffReady = false;
+
+  // liff.getIDToken() can go stale/null after the token's ~1hr lifetime, especially
+  // now that the page stays open and polling — always ask LIFF for the current one
+  // right before a write instead of reusing whatever we got at page load.
+  function freshIdToken() {
+    if (!liffReady) return null;
+    try { return liff.getIDToken(); } catch (e) { return null; }
+  }
+
+  function handleExpiredSession() {
+    connText.textContent = "登入已過期，正在重新整理頁面…";
+    connDot.classList.add("offline");
+    setTimeout(() => location.reload(), 1200);
+  }
 
   async function submitVote(dateKey, count, guestNames) {
+    const idToken = freshIdToken();
+    if (!idToken) return handleExpiredSession();
     try {
       const res = await fetch("/api/vote", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -522,11 +538,14 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
       });
       const data = await res.json();
       if (res.ok) { daysData = data.days; render(); }
+      else if (res.status === 401) handleExpiredSession();
       else connText.textContent = "報名失敗：" + (data.error || "請重試");
     } catch (e) { connText.textContent = "網路異常，請重試"; }
   }
 
   async function saveSession(dateKey, patch) {
+    const idToken = freshIdToken();
+    if (!idToken) return handleExpiredSession();
     try {
       const res = await fetch("/api/session", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -534,6 +553,7 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
       });
       const data = await res.json();
       if (res.ok) { daysData = data.days; render(); }
+      else if (res.status === 401) handleExpiredSession();
     } catch (e) {}
   }
 
@@ -588,7 +608,7 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
       await liff.init({ liffId: cfg.liffId });
       if (!liff.isLoggedIn()) { liff.login(); return; }
 
-      idToken = liff.getIDToken();
+      liffReady = true;
       const profile = await liff.getProfile();
       myUserId = profile.userId;
 
