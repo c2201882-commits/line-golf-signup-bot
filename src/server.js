@@ -66,6 +66,7 @@ app.post("/api/vote", async (req, res) => {
   try {
     identity = await verifyIdToken(idToken);
   } catch (err) {
+    console.error("verifyIdToken failed:", err.message || err);
     return res.status(401).json({ error: "invalid LINE identity", detail: String(err.message || err) });
   }
 
@@ -89,6 +90,7 @@ app.post("/api/session", async (req, res) => {
   try {
     await verifyIdToken(idToken); // anyone in the group may edit course/tee-time, but must be a real LINE user
   } catch (err) {
+    console.error("verifyIdToken failed:", err.message || err);
     return res.status(401).json({ error: "invalid LINE identity", detail: String(err.message || err) });
   }
 
