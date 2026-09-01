@@ -608,6 +608,21 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
       await liff.init({ liffId: cfg.liffId });
       if (!liff.isLoggedIn()) { liff.login(); return; }
 
+      // A login from before the openid scope was added (or any other stale
+      // grant) can leave isLoggedIn() true with no id_token available, which
+      // no amount of reloading fixes on its own — force one fresh login.
+      if (!liff.getIDToken()) {
+        const retried = sessionStorage.getItem("liff_relogin_attempted");
+        if (!retried) {
+          sessionStorage.setItem("liff_relogin_attempted", "1");
+          liff.logout();
+          liff.login();
+          return;
+        }
+        throw new Error("no id_token even after re-login");
+      }
+      sessionStorage.removeItem("liff_relogin_attempted");
+
       liffReady = true;
       const profile = await liff.getProfile();
       myUserId = profile.userId;
