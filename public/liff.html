@@ -535,6 +535,11 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
   }
   function safeCall(fn) { try { return fn(); } catch (e) { return "err:" + e; } }
 
+  // In External Browser mode, LIFF only actually re-acquires an id_token
+  // during a real interactive login round-trip through access.line.me — a
+  // plain reload just restores the already-logged-in session as-is, silently
+  // keeping whatever (possibly now-expired) id_token was cached. So recovery
+  // here is a forced logout+login, not a reload.
   function handleExpiredSession() {
     const debug = {
       isLoggedIn: safeCall(() => liff.isLoggedIn()),
@@ -543,9 +548,12 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
       hasAccessToken: !!safeCall(() => liff.getAccessToken()),
     };
     console.warn("handleExpiredSession", debug);
-    connText.textContent = `登入資料異常（登入:${debug.isLoggedIn} LINE內:${debug.isInClient} 系統:${debug.os} 有AccessToken:${debug.hasAccessToken}）— 請截圖這行給開發者，5秒後自動重整`;
+    connText.textContent = `登入已過期，正在重新登入…（登入:${debug.isLoggedIn} LINE內:${debug.isInClient} 系統:${debug.os}）`;
     connDot.classList.add("offline");
-    setTimeout(() => location.reload(), 5000);
+    setTimeout(() => {
+      try { liff.logout(); } catch (e) {}
+      liff.login();
+    }, 1200);
   }
 
   async function submitVote(dateKey, count, guestNames) {
