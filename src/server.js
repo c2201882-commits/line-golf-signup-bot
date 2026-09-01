@@ -2,7 +2,7 @@ const path = require("path");
 const express = require("express");
 const line = require("@line/bot-sdk");
 const { parseMessage } = require("./parser");
-const { applyEntries, getMonth, monthKey, canonicalDate, setVote, setSession } = require("./store");
+const { applyEntries, getMonth, monthKey, canonicalDate, setVote, setSession, load, save } = require("./store");
 const { formatSummary, HELP_TEXT, buildMenuQuickReply } = require("./summary");
 const { verifyIdToken } = require("./lineAuth");
 
@@ -94,6 +94,38 @@ app.post("/api/session", async (req, res) => {
 
   const monthData = setSession(groupId, month, date, { course, teeTime });
   res.json({ days: monthData.days });
+});
+
+// ---- Admin backup/restore --------------------------------------------------
+// Render's free plan wipes the filesystem on every deploy. These let us dump
+// the whole store before pushing a change and write it back after the new
+// deploy is live, so sign-ups survive a code update.
+
+const ADMIN_SECRET = process.env.ADMIN_SECRET;
+
+function checkAdminSecret(req, res) {
+  if (!ADMIN_SECRET) {
+    res.status(503).json({ error: "ADMIN_SECRET not configured" });
+    return false;
+  }
+  if (req.query.secret !== ADMIN_SECRET && (req.body || {}).secret !== ADMIN_SECRET) {
+    res.status(401).json({ error: "invalid secret" });
+    return false;
+  }
+  return true;
+}
+
+app.get("/api/admin/backup", (req, res) => {
+  if (!checkAdminSecret(req, res)) return;
+  res.json(load());
+});
+
+app.post("/api/admin/restore", (req, res) => {
+  if (!checkAdminSecret(req, res)) return;
+  const { data } = req.body || {};
+  if (!data || typeof data !== "object") return res.status(400).json({ error: "data object is required" });
+  save(data);
+  res.json({ ok: true });
 });
 
 async function handleEvent(event) {
