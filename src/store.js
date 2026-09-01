@@ -97,7 +97,8 @@ function applyEntries(groupId, entries, mKey, dateToKey) {
 }
 
 // Web sign-up entry point: set (or clear, when count <= 0) one person's headcount for a date.
-function setVote(groupId, mKey, dateKey, { lineUserId, displayName, count }) {
+// `guestNames` optionally names the extra people this person is signing up alongside themselves.
+function setVote(groupId, mKey, dateKey, { lineUserId, displayName, count, guestNames }) {
   const data = load();
   if (!data[groupId]) data[groupId] = {};
   if (!data[groupId][mKey]) data[groupId][mKey] = { days: {} };
@@ -108,7 +109,7 @@ function setVote(groupId, mKey, dateKey, { lineUserId, displayName, count }) {
   if (!count || count <= 0) {
     delete day.entries[key];
   } else {
-    day.entries[key] = { displayName, count, updatedAt: Date.now() };
+    day.entries[key] = { displayName, count, guestNames: guestNames || [], updatedAt: Date.now() };
   }
 
   save(data);

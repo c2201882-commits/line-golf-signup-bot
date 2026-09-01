@@ -10,33 +10,33 @@
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
 :root {
-  --bg: #f5f3e9;
+  --bg: #f3fbf6;
   --surface: #ffffff;
-  --surface-2: #eee9d9;
-  --border: #ddd7c2;
-  --text: #1e2a20;
-  --muted: #6d7566;
-  --accent: #2f6f4a;
-  --accent-strong: #1f5136;
-  --accent-soft: #dfeee1;
-  --gold: #b8791f;
-  --gold-soft: #f3e4c6;
-  --danger: #a3402f;
-  --shadow: rgba(30, 42, 32, 0.08);
+  --surface-2: #e9f9f0;
+  --border: #cdecdc;
+  --text: #163227;
+  --muted: #5f7d6d;
+  --accent: #16c172;
+  --accent-strong: #0ea15d;
+  --accent-soft: #ddf7e8;
+  --gold: #ffa900;
+  --gold-soft: #fff2d6;
+  --danger: #f0483f;
+  --shadow: rgba(22, 90, 60, 0.08);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #10150f; --surface: #182019; --surface-2: #1f281f; --border: #2b352b;
-    --text: #eef0e6; --muted: #9aa593; --accent: #6fcf9a; --accent-strong: #8fe0b3;
-    --accent-soft: #22352a; --gold: #e3b15c; --gold-soft: #3a2f19; --danger: #e18a75;
-    --shadow: rgba(0, 0, 0, 0.35);
+    --bg: #0e1f17; --surface: #15291f; --surface-2: #1b3327; --border: #2a4a3a;
+    --text: #eafbf1; --muted: #9fc2ae; --accent: #35e08f; --accent-strong: #6df7b3;
+    --accent-soft: #1f4433; --gold: #ffce4d; --gold-soft: #3a2f12; --danger: #ff8177;
+    --shadow: rgba(0, 0, 0, 0.4);
   }
 }
 :root[data-theme="dark"] {
-  --bg: #10150f; --surface: #182019; --surface-2: #1f281f; --border: #2b352b;
-  --text: #eef0e6; --muted: #9aa593; --accent: #6fcf9a; --accent-strong: #8fe0b3;
-  --accent-soft: #22352a; --gold: #e3b15c; --gold-soft: #3a2f19; --danger: #e18a75;
-  --shadow: rgba(0, 0, 0, 0.35);
+  --bg: #0e1f17; --surface: #15291f; --surface-2: #1b3327; --border: #2a4a3a;
+  --text: #eafbf1; --muted: #9fc2ae; --accent: #35e08f; --accent-strong: #6df7b3;
+  --accent-soft: #1f4433; --gold: #ffce4d; --gold-soft: #3a2f12; --danger: #ff8177;
+  --shadow: rgba(0, 0, 0, 0.4);
 }
 * { box-sizing: border-box; }
 body {
@@ -166,6 +166,13 @@ section.summary h2 { font-family: "Fraunces", serif; font-size: 17px; font-weigh
 .stepper .count-display {
   font-family: "Fraunces", serif; font-size: 30px; font-weight: 600; min-width: 48px; text-align: center;
 }
+.guest-names { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.guest-names input {
+  font-family: inherit; font-size: 14px; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--text); outline: none; width: 100%; transition: border-color 0.15s ease;
+}
+.guest-names input:focus { border-color: var(--accent); background: var(--surface); }
+.guest-names input::placeholder { color: var(--muted); }
 .sheet-actions { display: flex; gap: 10px; }
 .sheet-actions button {
   flex: 1; font-family: "Public Sans", sans-serif; font-weight: 700; font-size: 14px;
@@ -224,6 +231,7 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
       <span class="count-display" id="step-count">1</span>
       <button type="button" id="step-plus" aria-label="增加">+</button>
     </div>
+    <div class="guest-names" id="guest-names"></div>
     <div class="sheet-actions">
       <button type="button" class="ghost" id="sheet-cancel">取消</button>
       <button type="button" class="primary" id="sheet-save">儲存報名</button>
@@ -315,6 +323,12 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
     const mine = entries && entries["line:" + myUserId];
     return mine ? mine.count : 0;
   }
+  function entryLabel(e) {
+    const extra = (e.guestNames || []).map((n) => (n || "").trim()).filter(Boolean);
+    const named = [e.displayName, ...extra];
+    const unnamed = Math.max(0, (e.count || 1) - named.length);
+    return unnamed > 0 ? `${named.join(", ")} +${unnamed}` : named.join(", ");
+  }
   function todayKey() {
     const now = new Date();
     return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
@@ -383,7 +397,7 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
       const rank = document.createElement("span"); rank.className = "rank"; rank.textContent = "#" + (i + 1);
       const dl = document.createElement("span"); dl.className = "date-label"; dl.textContent = dateLabel(r.dt);
       const pl = document.createElement("span"); pl.className = "players";
-      pl.textContent = r.entries.map(([, e]) => (e.count > 1 ? `${e.displayName}x${e.count}` : e.displayName)).join("、");
+      pl.textContent = r.entries.map(([, e]) => entryLabel(e)).join("、");
       const ct = document.createElement("span"); ct.className = "count"; ct.textContent = `${r.count} 人`;
       headline.appendChild(rank); headline.appendChild(dl); headline.appendChild(pl); headline.appendChild(ct);
 
@@ -413,9 +427,7 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
     const lines = [`『${target.month + 1}月打球開團囉⛳️』`];
     rows.forEach((r) => {
       const day = daysData[r.dt.key] || {};
-      const names = r.entries
-        .map(([, e]) => (e.count > 1 ? `${e.displayName}x${e.count}` : e.displayName))
-        .join(" ");
+      const names = r.entries.map(([, e]) => entryLabel(e)).join(", ");
       const prefix = [day.course, day.teeTime].filter(Boolean).join(" ");
       const body = [prefix, names].filter(Boolean).join(" ");
       lines.push(`『${target.month + 1}/${r.dt.day}』：${body} — ${r.count}`);
@@ -446,16 +458,35 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
   const sheetTitle = document.getElementById("sheet-title");
   const sheetSub = document.getElementById("sheet-sub");
   const stepCount = document.getElementById("step-count");
+  const guestNamesEl = document.getElementById("guest-names");
   let sheetDateKey = null;
   let sheetCount = 1;
+  let sheetGuestNames = [];
+
+  function renderGuestInputs() {
+    guestNamesEl.innerHTML = "";
+    for (let i = 0; i < sheetCount - 1; i++) {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.maxLength = 30;
+      input.placeholder = `第 ${i + 2} 位球友姓名（可留空）`;
+      input.value = sheetGuestNames[i] || "";
+      input.addEventListener("input", () => { sheetGuestNames[i] = input.value; });
+      guestNamesEl.appendChild(input);
+    }
+  }
 
   function openSheet(dateKey) {
     sheetDateKey = dateKey;
-    sheetCount = Math.max(1, myEntryCount(dateKey) || 1);
+    const entries = daysData[dateKey] && daysData[dateKey].entries;
+    const mine = entries && entries["line:" + myUserId];
+    sheetCount = Math.max(1, (mine && mine.count) || 1);
+    sheetGuestNames = mine && mine.guestNames ? mine.guestNames.slice() : [];
     stepCount.textContent = sheetCount;
+    renderGuestInputs();
     const dt = monthDates.find((d) => d.key === dateKey);
     sheetTitle.textContent = `${target.month + 1}/${dt.day} 報名人數`;
-    sheetSub.textContent = "包含你自己 + 你要幫忙報名的朋友人數";
+    sheetSub.textContent = "第一位是你自己，其他欄位可以填幫忙報名的朋友姓名";
     backdrop.classList.add("open");
   }
   function closeSheet() {
@@ -465,17 +496,17 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
   }
 
   document.getElementById("step-minus").addEventListener("click", () => {
-    sheetCount = Math.max(1, sheetCount - 1); stepCount.textContent = sheetCount;
+    sheetCount = Math.max(1, sheetCount - 1); stepCount.textContent = sheetCount; renderGuestInputs();
   });
   document.getElementById("step-plus").addEventListener("click", () => {
-    sheetCount = Math.min(20, sheetCount + 1); stepCount.textContent = sheetCount;
+    sheetCount = Math.min(20, sheetCount + 1); stepCount.textContent = sheetCount; renderGuestInputs();
   });
   document.getElementById("sheet-cancel").addEventListener("click", () => {
-    if (sheetDateKey && myEntryCount(sheetDateKey) > 0) submitVote(sheetDateKey, 0);
+    if (sheetDateKey && myEntryCount(sheetDateKey) > 0) submitVote(sheetDateKey, 0, []);
     closeSheet();
   });
   document.getElementById("sheet-save").addEventListener("click", () => {
-    if (sheetDateKey) submitVote(sheetDateKey, sheetCount);
+    if (sheetDateKey) submitVote(sheetDateKey, sheetCount, sheetGuestNames.slice(0, sheetCount - 1));
     closeSheet();
   });
   backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeSheet(); });
@@ -483,11 +514,11 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
   let myUserId = null;
   let idToken = null;
 
-  async function submitVote(dateKey, count) {
+  async function submitVote(dateKey, count, guestNames) {
     try {
       const res = await fetch("/api/vote", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, groupId, month: monthKey, date: dateKey, count }),
+        body: JSON.stringify({ idToken, groupId, month: monthKey, date: dateKey, count, guestNames: guestNames || [] }),
       });
       const data = await res.json();
       if (res.ok) { daysData = data.days; render(); }

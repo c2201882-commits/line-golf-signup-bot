@@ -59,7 +59,7 @@ app.get("/api/state", async (req, res) => {
 });
 
 app.post("/api/vote", async (req, res) => {
-  const { idToken, groupId, month, date, count } = req.body || {};
+  const { idToken, groupId, month, date, count, guestNames } = req.body || {};
   if (!groupId || !month || !date) return res.status(400).json({ error: "groupId, month, date are required" });
 
   let identity;
@@ -70,10 +70,14 @@ app.post("/api/vote", async (req, res) => {
   }
 
   const parsedCount = Math.max(0, Math.min(20, parseInt(count, 10) || 0));
+  const parsedGuestNames = Array.isArray(guestNames)
+    ? guestNames.slice(0, 19).map((n) => String(n || "").trim().slice(0, 30))
+    : [];
   const monthData = setVote(groupId, month, date, {
     lineUserId: identity.lineUserId,
     displayName: identity.displayName,
     count: parsedCount,
+    guestNames: parsedGuestNames,
   });
   res.json({ days: monthData.days });
 });
