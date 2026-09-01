@@ -83,8 +83,16 @@ section.summary {
   background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
   padding: 18px 18px; margin-bottom: 26px; box-shadow: 0 1px 2px var(--shadow);
 }
+.summary-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 section.summary h2 { font-family: "Fraunces", serif; font-size: 17px; font-weight: 600; margin: 0 0 4px; }
-.summary .sub { font-size: 12.5px; color: var(--muted); margin: 0 0 14px; }
+.summary .sub { font-size: 12.5px; color: var(--muted); margin: 0; }
+.copy-btn {
+  flex-shrink: 0; font-family: "Public Sans", sans-serif; font-weight: 600; font-size: 12.5px;
+  padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text); cursor: pointer; transition: border-color 0.15s ease, background 0.15s ease;
+}
+.copy-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+.copy-btn.copied { border-color: var(--accent); color: var(--accent-strong); }
 .confirmed-list { display: flex; flex-direction: column; gap: 10px; }
 .confirmed-row {
   display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 10px;
@@ -119,6 +127,9 @@ section.summary h2 { font-family: "Fraunces", serif; font-size: 17px; font-weigh
 .day-card.empty { background: transparent; border: none; }
 .day-card.voted { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .day-card.weekend .daynum { color: var(--accent-strong); }
+.day-card.past { opacity: 0.5; }
+.day-card.past .daynum { text-decoration: line-through; color: var(--muted); }
+.day-card.past.weekend .daynum { color: var(--muted); }
 .day-card .daynum { font-family: "Fraunces", serif; font-size: 16px; font-weight: 600; line-height: 1; }
 .day-card .count-badge {
   font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 600; color: var(--accent-strong);
@@ -187,8 +198,13 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
   <p class="status-line"><span class="dot" id="conn-dot"></span><span id="conn-text">連線中…</span></p>
 
   <section class="summary">
-    <h2>本月開團球局</h2>
-    <p class="sub">任何有人報名的日期即成團，依人數由高到低排列</p>
+    <div class="summary-head">
+      <div>
+        <h2>本月開團球局</h2>
+        <p class="sub">任何有人報名的日期即成團，依日期先後排列</p>
+      </div>
+      <button type="button" class="copy-btn" id="copy-btn">複製名單</button>
+    </div>
     <div class="confirmed-list" id="confirmed-list">
       <p class="empty-note">目前還沒有人報名</p>
     </div>
@@ -299,6 +315,11 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
     const mine = entries && entries["line:" + myUserId];
     return mine ? mine.count : 0;
   }
+  function todayKey() {
+    const now = new Date();
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  }
+  function isPastDate(dateKey) { return dateKey < todayKey(); }
 
   function render() {
     calendarEl.innerHTML = "";
@@ -319,9 +340,10 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
       const count = dayCount(dt.key);
       const iVoted = myEntryCount(dt.key) > 0;
       const isWeekend = dt.dow === 0 || dt.dow === 6;
+      const isPast = isPastDate(dt.key);
 
       const card = document.createElement("div");
-      card.className = "day-card" + (iVoted ? " voted" : "") + (isWeekend ? " weekend" : "");
+      card.className = "day-card" + (iVoted ? " voted" : "") + (isWeekend ? " weekend" : "") + (isPast ? " past" : "");
 
       const num = document.createElement("span");
       num.className = "daynum"; num.textContent = dt.day;
@@ -333,6 +355,7 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
       const btn = document.createElement("button");
       btn.className = "toggle";
       btn.textContent = iVoted ? "編輯" : "報名";
+      btn.disabled = isPast;
       btn.addEventListener("click", () => openSheet(dt.key));
 
       card.appendChild(num); card.appendChild(badge); card.appendChild(btn);
@@ -346,7 +369,7 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
     const rows = monthDates
       .map((dt) => ({ dt, count: dayCount(dt.key), entries: dayEntries(dt.key) }))
       .filter((r) => r.count > 0)
-      .sort((a, b) => b.count - a.count || a.dt.day - b.dt.day);
+      .sort((a, b) => a.dt.day - b.dt.day);
 
     confirmedEl.innerHTML = "";
     if (rows.length === 0) {
@@ -380,6 +403,43 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
       confirmedEl.appendChild(row);
     });
   }
+
+  function buildCopyText() {
+    const rows = monthDates
+      .map((dt) => ({ dt, count: dayCount(dt.key), entries: dayEntries(dt.key) }))
+      .filter((r) => r.count > 0)
+      .sort((a, b) => a.dt.day - b.dt.day);
+
+    const lines = [`『${target.month + 1}月打球開團囉⛳️』`];
+    rows.forEach((r) => {
+      const day = daysData[r.dt.key] || {};
+      const names = r.entries
+        .map(([, e]) => (e.count > 1 ? `${e.displayName}x${e.count}` : e.displayName))
+        .join(" ");
+      const prefix = [day.course, day.teeTime].filter(Boolean).join(" ");
+      const body = [prefix, names].filter(Boolean).join(" ");
+      lines.push(`『${target.month + 1}/${r.dt.day}』：${body} — ${r.count}`);
+    });
+    return lines.join("\n");
+  }
+
+  const copyBtn = document.getElementById("copy-btn");
+  copyBtn.addEventListener("click", async () => {
+    const text = buildCopyText();
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      const ta = document.createElement("textarea");
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); } catch (e2) {}
+      document.body.removeChild(ta);
+    }
+    const original = copyBtn.textContent;
+    copyBtn.textContent = "已複製！";
+    copyBtn.classList.add("copied");
+    setTimeout(() => { copyBtn.textContent = original; copyBtn.classList.remove("copied"); }, 1500);
+  });
 
   // ---- headcount sheet ----
   const backdrop = document.getElementById("sheet-backdrop");
