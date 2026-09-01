@@ -58,6 +58,8 @@
 | `LINE_CHANNEL_SECRET` | Messaging API 的 channel secret，驗證 webhook 簽章用 |
 | `LIFF_ID` | 報名網頁的 LIFF ID |
 | `LINE_LIFF_CHANNEL_ID` | LIFF app 所屬 channel 的 Channel ID，驗證 id_token 用 |
+| `ADMIN_SECRET` | 保護 `/api/admin/backup`、`/api/admin/restore` 的密鑰 |
+| `DATA_DIR` | 存放 `signups.json` 的資料夾，正式環境請指到掛載的持久化磁碟（例如 Render 的 `/var/data`），本機開發留空即可 |
 | `PORT` | 伺服器監聽的 port（Render 會自動注入，本機開發預設 3000） |
 
 ## 本機開發

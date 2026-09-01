@@ -20,7 +20,11 @@
 const fs = require("fs");
 const path = require("path");
 
-const DATA_FILE = path.join(__dirname, "..", "data", "signups.json");
+// DATA_DIR points at a mounted persistent disk in production (e.g. Render's
+// /var/data) so sign-ups survive restarts; falls back to a local folder for
+// development, where the filesystem is already persistent.
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "..", "data");
+const DATA_FILE = path.join(DATA_DIR, "signups.json");
 
 function load() {
   try {
