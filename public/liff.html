@@ -236,15 +236,17 @@ section.summary h2 { font-family: "Zen Maru Gothic", sans-serif; font-size: 16px
 }
 .guest-names input:focus { border-color: var(--accent); background: var(--surface); }
 .guest-names input::placeholder { color: var(--muted); }
-.sheet-actions { display: flex; gap: 10px; }
+.sheet-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .sheet-actions button {
-  flex: 1; font-family: inherit; font-weight: 600; font-size: 14px;
+  flex: 1; min-width: 88px; font-family: inherit; font-weight: 600; font-size: 14px;
   padding: 12px; border-radius: 9px; cursor: pointer; border: 1px solid transparent;
 }
-.sheet-actions .primary { background: var(--accent); color: #fff; }
+.sheet-actions .primary { background: var(--accent); color: #fff; flex-basis: 100%; }
 .sheet-actions .primary:hover { background: var(--accent-strong); }
 .sheet-actions .ghost { background: transparent; border-color: var(--border); color: var(--text); }
-.sheet-actions .ghost:hover { border-color: var(--danger); color: var(--danger); }
+.sheet-actions .ghost:hover { border-color: var(--muted); }
+.sheet-actions .ghost.danger { color: var(--danger); }
+.sheet-actions .ghost.danger:hover { border-color: var(--danger); background: var(--danger-soft); }
 
 .session-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
 .session-item {
@@ -394,8 +396,9 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     </div>
     <div class="guest-names" id="guest-names"></div>
     <div class="sheet-actions">
-      <button type="button" class="ghost" id="sheet-cancel">取消</button>
-      <button type="button" class="primary" id="sheet-save">儲存報名</button>
+      <button type="button" class="ghost" id="sheet-exit">退出</button>
+      <button type="button" class="ghost danger" id="sheet-delete">刪除球局</button>
+      <button type="button" class="primary" id="sheet-save">儲存</button>
     </div>
   </div>
 </div>
@@ -728,10 +731,10 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       const actions = document.createElement("div"); actions.className = "s-actions";
       const delBtn = document.createElement("button"); delBtn.type = "button"; delBtn.className = "danger";
       delBtn.textContent = "刪除球局";
-      delBtn.addEventListener("click", () => {
-        if (confirm(`確定要刪除「${sessionLabel(session)}」這個球局嗎？目前有 ${sessionCount(session)} 人報名，刪除後無法復原。`)) {
-          deleteSessionAndRefresh(dateKey, session.id);
-        }
+      delBtn.addEventListener("click", async () => {
+        if (!confirm(`確定要刪除「${sessionLabel(session)}」這個球局嗎？目前有 ${sessionCount(session)} 人報名，刪除後無法復原。`)) return;
+        await deleteSessionApi(dateKey, session.id);
+        if (daySessions(dateKey).length > 0) openPicker(dateKey); else closePicker();
       });
       const btn = document.createElement("button"); btn.type = "button";
       btn.textContent = myCountInSession(session) > 0 ? "編輯" : "報名";
@@ -755,20 +758,19 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   });
   pickerBackdrop.addEventListener("click", (e) => { if (e.target === pickerBackdrop) closePicker(); });
 
-  async function deleteSessionAndRefresh(dateKey, sessionId) {
+  async function deleteSessionApi(dateKey, sessionId) {
     const idToken = freshIdToken();
-    if (!idToken) { handleExpiredSession(); return; }
+    if (!idToken) { handleExpiredSession(); return false; }
     try {
       const res = await fetch("/api/session/delete", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken, groupId, month: monthKey, date: dateKey, sessionId }),
       });
       const data = await res.json();
-      if (res.ok) {
-        daysData = data.days; render();
-        if (daySessions(dateKey).length > 0) openPicker(dateKey); else closePicker();
-      } else if (res.status === 401) handleExpiredSession();
+      if (res.ok) { daysData = data.days; render(); return true; }
+      if (res.status === 401) handleExpiredSession();
     } catch (e) { connText.textContent = "網路異常，請重試"; }
+    return false;
   }
 
   async function createSession(dateKey) {
@@ -818,13 +820,13 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     sheetSessionId = sessionId;
     const session = daySessions(dateKey).find((s) => s.id === sessionId);
     const mine = session && session.entries && session.entries["line:" + myUserId];
-    sheetCount = Math.max(1, (mine && mine.count) || 1);
+    sheetCount = mine ? mine.count : 1; // a brand-new sign-up starts at 1; editing an existing one can be lowered to 0 to leave
     sheetGuestNames = mine && mine.guestNames ? mine.guestNames.slice() : [];
     stepCount.textContent = sheetCount;
     renderGuestInputs();
     const dt = monthDates.find((d) => d.key === dateKey);
     sheetTitle.textContent = `${target.month + 1}/${dt.day} 報名人數`;
-    sheetSub.textContent = "第一位是你自己，其他欄位可以填幫忙報名的朋友姓名";
+    sheetSub.textContent = "第一位是你自己，其他欄位可以填幫忙報名的朋友姓名；人數歸零並儲存即為退出這團";
     backdrop.classList.add("open");
   }
   function closeSheet() {
@@ -835,18 +837,31 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   }
 
   document.getElementById("step-minus").addEventListener("click", () => {
-    sheetCount = Math.max(1, sheetCount - 1); stepCount.textContent = sheetCount; renderGuestInputs();
+    sheetCount = Math.max(0, sheetCount - 1); stepCount.textContent = sheetCount; renderGuestInputs();
   });
   document.getElementById("step-plus").addEventListener("click", () => {
     sheetCount = Math.min(20, sheetCount + 1); stepCount.textContent = sheetCount; renderGuestInputs();
   });
-  document.getElementById("sheet-cancel").addEventListener("click", () => {
-    const session = sheetDateKey && daySessions(sheetDateKey).find((s) => s.id === sheetSessionId);
-    if (session && myCountInSession(session) > 0) submitVote(sheetDateKey, sheetSessionId, 0, []);
+  // 退出：直接關閉，不做任何變更
+  document.getElementById("sheet-exit").addEventListener("click", () => {
     closeSheet();
   });
+  // 刪除：整個球局都刪掉（不只是自己的報名），需要確認
+  document.getElementById("sheet-delete").addEventListener("click", async () => {
+    const dateKey = sheetDateKey, sessionId = sheetSessionId;
+    const session = dateKey && daySessions(dateKey).find((s) => s.id === sessionId);
+    if (!session) return closeSheet();
+    const label = sessionLabel(session);
+    const count = sessionCount(session);
+    if (!confirm(`確定要刪除「${label}」這個球局嗎？目前有 ${count} 人報名，刪除後無法復原。`)) return;
+    closeSheet();
+    await deleteSessionApi(dateKey, sessionId);
+  });
+  // 儲存：套用人數與姓名的變更（人數 0 等於退出這團）
   document.getElementById("sheet-save").addEventListener("click", () => {
-    if (sheetDateKey && sheetSessionId) submitVote(sheetDateKey, sheetSessionId, sheetCount, sheetGuestNames.slice(0, sheetCount - 1));
+    if (sheetDateKey && sheetSessionId) {
+      submitVote(sheetDateKey, sheetSessionId, sheetCount, sheetGuestNames.slice(0, Math.max(0, sheetCount - 1)));
+    }
     closeSheet();
   });
   backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeSheet(); });
