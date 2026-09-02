@@ -229,6 +229,16 @@ section.summary h2 { font-family: "Zen Maru Gothic", sans-serif; font-size: 16px
 .sheet-actions .ghost { background: transparent; border-color: var(--border); color: var(--text); }
 .sheet-actions .ghost:hover { border-color: var(--muted); }
 
+.entry-menu-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.entry-menu-list button {
+  font-family: inherit; font-size: 14px; font-weight: 500; text-align: left; padding: 13px 14px;
+  border-radius: 9px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.entry-menu-list button:hover { border-color: var(--accent); background: var(--accent-soft); }
+#entry-cancel-signup { color: var(--danger); }
+#entry-cancel-signup:hover { border-color: var(--danger); background: var(--danger-soft); }
+
 .session-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
 .session-item {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
@@ -363,15 +373,30 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   </div>
 </div>
 
+<div class="sheet-backdrop" id="entry-menu-backdrop">
+  <div class="sheet">
+    <h3 id="entry-menu-title">我的報名</h3>
+    <p class="sheet-sub">你已經報名這個球局，選擇要做什麼</p>
+    <div class="entry-menu-list">
+      <button type="button" id="entry-cancel-signup">取消報名</button>
+      <button type="button" id="entry-change-count">更改人數</button>
+      <button type="button" id="entry-edit-session">編輯球場與開球時間</button>
+    </div>
+    <div class="sheet-actions">
+      <button type="button" class="ghost" id="entry-menu-back">返回</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet-backdrop" id="sheet-backdrop">
   <div class="sheet">
     <h3 id="sheet-title">選擇人數</h3>
     <p class="sheet-sub" id="sheet-sub"></p>
-    <div class="session-fields">
+    <div class="session-fields" id="session-fields">
       <input type="text" id="sheet-course" placeholder="球場名稱（選填）" maxlength="60" />
       <input type="text" id="sheet-teetime" placeholder="開球時間（選填）" maxlength="20" />
     </div>
-    <div class="stepper">
+    <div class="stepper" id="stepper-wrap">
       <button type="button" id="step-minus" aria-label="減少">−</button>
       <span class="count-display" id="step-count">1</span>
       <button type="button" id="step-plus" aria-label="增加">+</button>
@@ -686,7 +711,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   // shows the picker so there's a way to reach "＋ 開新的球局".
   function openDayEntry(dateKey) {
     const sessions = daySessions(dateKey);
-    if (sessions.length === 0) { openSheet(dateKey, null); return; }
+    if (sessions.length === 0) { openSheet(dateKey, null, "full"); return; }
     openPicker(dateKey);
   }
 
@@ -702,9 +727,14 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       const sub = document.createElement("span"); sub.className = "s-sub"; sub.textContent = `${sessionCount(session)} 人`;
       info.appendChild(title); info.appendChild(sub);
 
+      const alreadyIn = myCountInSession(session) > 0;
       const btn = document.createElement("button"); btn.type = "button";
-      btn.textContent = myCountInSession(session) > 0 ? "編輯" : "報名";
-      btn.addEventListener("click", () => { closePicker(); openSheet(dateKey, session.id); });
+      btn.textContent = alreadyIn ? "編輯" : "報名";
+      btn.addEventListener("click", () => {
+        closePicker();
+        if (alreadyIn) openEntryMenu(dateKey, session.id);
+        else openSheet(dateKey, session.id, "full");
+      });
 
       item.appendChild(info); item.appendChild(btn);
       sessionListEl.appendChild(item);
@@ -713,11 +743,49 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   }
   function closePicker() { pickerBackdrop.classList.remove("open"); pickerDateKey = null; }
 
+  // ---- entry menu: shown instead of the full sheet when you've already
+  // signed up, so "edit" doesn't dump headcount + names + course/time on
+  // you all at once — pick one clear action first.
+  const entryMenuBackdrop = document.getElementById("entry-menu-backdrop");
+  let entryMenuDateKey = null;
+  let entryMenuSessionId = null;
+
+  function openEntryMenu(dateKey, sessionId) {
+    entryMenuDateKey = dateKey;
+    entryMenuSessionId = sessionId;
+    const dt = monthDates.find((d) => d.key === dateKey);
+    document.getElementById("entry-menu-title").textContent = `${target.month + 1}/${dt.day} 我的報名`;
+    entryMenuBackdrop.classList.add("open");
+  }
+  function closeEntryMenu() {
+    entryMenuBackdrop.classList.remove("open");
+    entryMenuDateKey = null;
+    entryMenuSessionId = null;
+  }
+  document.getElementById("entry-menu-back").addEventListener("click", closeEntryMenu);
+  entryMenuBackdrop.addEventListener("click", (e) => { if (e.target === entryMenuBackdrop) closeEntryMenu(); });
+
+  document.getElementById("entry-cancel-signup").addEventListener("click", () => {
+    const dateKey = entryMenuDateKey, sessionId = entryMenuSessionId;
+    closeEntryMenu();
+    if (dateKey && sessionId) submitVote(dateKey, sessionId, 0, []);
+  });
+  document.getElementById("entry-change-count").addEventListener("click", () => {
+    const dateKey = entryMenuDateKey, sessionId = entryMenuSessionId;
+    closeEntryMenu();
+    if (dateKey && sessionId) openSheet(dateKey, sessionId, "count");
+  });
+  document.getElementById("entry-edit-session").addEventListener("click", () => {
+    const dateKey = entryMenuDateKey, sessionId = entryMenuSessionId;
+    closeEntryMenu();
+    if (dateKey && sessionId) openSheet(dateKey, sessionId, "info");
+  });
+
   document.getElementById("picker-cancel").addEventListener("click", closePicker);
   document.getElementById("picker-new").addEventListener("click", () => {
     const dateKey = pickerDateKey;
     closePicker();
-    if (dateKey) openSheet(dateKey, null); // created lazily on Save, not here
+    if (dateKey) openSheet(dateKey, null, "full"); // created lazily on Save, not here
   });
   pickerBackdrop.addEventListener("click", (e) => { if (e.target === pickerBackdrop) closePicker(); });
 
@@ -740,6 +808,11 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   }
 
   // ---- headcount sheet ----
+  // One shared sheet, three modes selected by which fields it shows:
+  //   "full"  — brand-new sign-up (or first time joining an existing empty
+  //             session): headcount + guest names + course/tee-time together.
+  //   "count" — 更改人數: only headcount + guest names.
+  //   "info"  — 編輯球場與開球時間: only course/tee-time.
   const backdrop = document.getElementById("sheet-backdrop");
   const sheetTitle = document.getElementById("sheet-title");
   const sheetSub = document.getElementById("sheet-sub");
@@ -747,8 +820,11 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   const guestNamesEl = document.getElementById("guest-names");
   const courseInputEl = document.getElementById("sheet-course");
   const teeTimeInputEl = document.getElementById("sheet-teetime");
+  const sessionFieldsEl = document.getElementById("session-fields");
+  const stepperWrapEl = document.getElementById("stepper-wrap");
   let sheetDateKey = null;
   let sheetSessionId = null;
+  let sheetMode = "full";
   let sheetCount = 1;
   let sheetGuestNames = [];
 
@@ -769,9 +845,10 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   // server yet — it's only actually created if Save is pressed with a
   // headcount above 0 (see sheet-save), so opening/exiting this sheet never
   // leaves a phantom empty session behind.
-  function openSheet(dateKey, sessionId) {
+  function openSheet(dateKey, sessionId, mode) {
     sheetDateKey = dateKey;
     sheetSessionId = sessionId;
+    sheetMode = mode || "full";
     const session = sessionId ? daySessions(dateKey).find((s) => s.id === sessionId) : null;
     const mine = session && session.entries && session.entries["line:" + myUserId];
     sheetCount = mine ? mine.count : 1; // a brand-new sign-up starts at 1; editing an existing one can be lowered to 0 to leave
@@ -780,9 +857,22 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     renderGuestInputs();
     courseInputEl.value = session ? session.course || "" : "";
     teeTimeInputEl.value = session ? session.teeTime || "" : "";
+
+    sessionFieldsEl.style.display = sheetMode === "count" ? "none" : "";
+    stepperWrapEl.style.display = sheetMode === "info" ? "none" : "";
+    guestNamesEl.style.display = sheetMode === "info" ? "none" : "";
+
     const dt = monthDates.find((d) => d.key === dateKey);
-    sheetTitle.textContent = `${target.month + 1}/${dt.day} 報名人數`;
-    sheetSub.textContent = "第一位是你自己，其他欄位可以填幫忙報名的朋友姓名；人數歸零並儲存即為退出這團";
+    if (sheetMode === "info") {
+      sheetTitle.textContent = `${target.month + 1}/${dt.day} 球場與時間`;
+      sheetSub.textContent = "填寫這個球局的球場與開球時間，全部人看到的都是同一份";
+    } else if (sheetMode === "count") {
+      sheetTitle.textContent = `${target.month + 1}/${dt.day} 更改人數`;
+      sheetSub.textContent = "以你目前報名的人數為基準調整，第一位是你自己";
+    } else {
+      sheetTitle.textContent = `${target.month + 1}/${dt.day} 報名人數`;
+      sheetSub.textContent = "第一位是你自己，其他欄位可以填幫忙報名的朋友姓名";
+    }
     backdrop.classList.add("open");
   }
   function closeSheet() {
@@ -802,25 +892,32 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   document.getElementById("sheet-exit").addEventListener("click", () => {
     closeSheet();
   });
-  // 儲存：套用人數、姓名、球場/時間的變更（人數 0 等於退出這團，退出後如果整團都沒人了
-  // 會自動消失，不需要另外的刪除功能）。全新的球局要先在這裡才真正建立；如果一路降到
-  // 0 人就儲存，代表根本不需要開這團，直接關閉即可，不留下空球局。
+  // 儲存：依模式套用變更。人數 0 等於退出這團，退出後如果整團都沒人了會自動消失，
+  // 不需要另外的刪除功能。全新的球局要先在這裡才真正建立；如果一路降到 0 人就儲存，
+  // 代表根本不需要開這團，直接關閉即可，不留下空球局。
   document.getElementById("sheet-save").addEventListener("click", async () => {
     if (!sheetDateKey) return closeSheet();
     const dateKey = sheetDateKey;
+    const mode = sheetMode;
     const count = sheetCount;
     const guestNames = sheetGuestNames.slice(0, Math.max(0, sheetCount - 1));
     const course = courseInputEl.value.trim();
     const teeTime = teeTimeInputEl.value.trim();
     let sessionId = sheetSessionId;
     closeSheet();
+
+    if (mode === "info") {
+      if (sessionId) await saveSessionInfo(dateKey, sessionId, { course, teeTime });
+      return;
+    }
+
     if (!sessionId) {
       if (count <= 0) return;
       const session = await createSession(dateKey);
       if (!session) return;
       sessionId = session.id;
     }
-    await saveSessionInfo(dateKey, sessionId, { course, teeTime });
+    if (mode === "full") await saveSessionInfo(dateKey, sessionId, { course, teeTime });
     submitVote(dateKey, sessionId, count, guestNames);
   });
   backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeSheet(); });
