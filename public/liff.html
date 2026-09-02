@@ -333,6 +333,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
 
   <div class="tabs">
     <button type="button" class="tab-btn active" id="tab-signup">報名球局</button>
+    <button type="button" class="tab-btn" id="tab-my">我的報名</button>
     <button type="button" class="tab-btn" id="tab-board">留言板</button>
     <button type="button" class="tab-btn" id="tab-activity">最新動態</button>
   </div>
@@ -356,6 +357,16 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     <div id="calendar"></div>
 
     <footer class="note">報名即時同步給所有人 · 可以幫朋友一起報名</footer>
+  </div>
+
+  <div class="view" id="view-my">
+    <section class="summary">
+      <h2>我的報名</h2>
+      <p class="sub">這個月你已經報名的球局</p>
+      <div class="confirmed-list" id="my-list">
+        <p class="empty-note">你這個月還沒有報名任何球局</p>
+      </div>
+    </section>
   </div>
 
   <div class="view" id="view-board">
@@ -479,6 +490,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   // ---- tabs ----
   const tabs = {
     signup: { btn: document.getElementById("tab-signup"), view: document.getElementById("view-signup") },
+    my: { btn: document.getElementById("tab-my"), view: document.getElementById("view-my") },
     board: { btn: document.getElementById("tab-board"), view: document.getElementById("view-board") },
     activity: { btn: document.getElementById("tab-activity"), view: document.getElementById("view-activity") },
   };
@@ -605,6 +617,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     });
     calendarEl.appendChild(grid);
     renderConfirmed();
+    renderMy();
   }
 
   let showPastGames = false;
@@ -642,6 +655,22 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       });
     });
     return rows;
+  }
+
+  const myListEl = document.getElementById("my-list");
+
+  function renderMy() {
+    const rows = allSessionRows()
+      .filter((r) => myCountInSession(r.session) > 0)
+      .sort((a, b) => a.dt.day - b.dt.day);
+
+    myListEl.innerHTML = "";
+    if (rows.length === 0) {
+      const p = document.createElement("p"); p.className = "empty-note"; p.textContent = "你這個月還沒有報名任何球局";
+      myListEl.appendChild(p);
+      return;
+    }
+    rows.forEach((r, i) => myListEl.appendChild(buildConfirmedRow(r, i + 1, isPastDate(r.dt.key))));
   }
 
   function renderConfirmed() {
