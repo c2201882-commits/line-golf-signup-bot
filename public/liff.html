@@ -1256,22 +1256,22 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       if (!cfg.liffId) throw new Error("LIFF_ID not configured");
 
       await liff.init({ liffId: cfg.liffId });
-      if (!liff.isLoggedIn()) { liff.login(); return; }
 
-      // A login from before the openid scope was added (or any other stale
-      // grant) can leave isLoggedIn() true with no id_token available, which
-      // no amount of reloading fixes on its own — force one fresh login.
-      if (!liff.getIDToken()) {
-        const retried = sessionStorage.getItem("liff_relogin_attempted");
-        if (!retried) {
-          sessionStorage.setItem("liff_relogin_attempted", "1");
-          liff.logout();
-          liff.login();
-          return;
-        }
-        throw new Error("no id_token even after re-login");
+      // Force a fresh interactive login every time this page is opened,
+      // rather than silently reusing an "already logged in" session and
+      // only reacting once its id_token turns out to be stale. Gated by a
+      // sessionStorage flag so it happens once per visit (tab), not in an
+      // infinite loop with the login redirect that brings us right back
+      // here with isLoggedIn() already true.
+      if (!sessionStorage.getItem("liff_forced_login_done")) {
+        sessionStorage.setItem("liff_forced_login_done", "1");
+        if (liff.isLoggedIn()) liff.logout();
+        liff.login();
+        return;
       }
-      sessionStorage.removeItem("liff_relogin_attempted");
+
+      if (!liff.isLoggedIn()) { liff.login(); return; }
+      if (!liff.getIDToken()) throw new Error("no id_token even after forced login");
 
       liffReady = true;
       const profile = await liff.getProfile();
