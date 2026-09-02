@@ -248,17 +248,20 @@ section.summary h2 { font-family: "Zen Maru Gothic", sans-serif; font-size: 16px
 
 .session-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
 .session-item {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
   padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-2);
 }
 .session-item .s-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .session-item .s-title { font-size: 13.5px; font-weight: 500; color: var(--text); }
 .session-item .s-sub { font-size: 11.5px; color: var(--muted); }
+.session-item .s-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .session-item button {
   flex-shrink: 0; font-family: inherit; font-weight: 600; font-size: 12.5px; padding: 7px 12px;
   border-radius: 7px; border: 1px solid var(--accent); background: transparent; color: var(--accent-strong); cursor: pointer;
 }
 .session-item button:hover { background: var(--accent-soft); }
+.session-item button.danger { border-color: var(--border); color: var(--muted); }
+.session-item button.danger:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-soft); }
 
 /* message board */
 .board-composer { margin-bottom: 20px; }
@@ -721,10 +724,21 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       const title = document.createElement("span"); title.className = "s-title"; title.textContent = sessionLabel(session);
       const sub = document.createElement("span"); sub.className = "s-sub"; sub.textContent = `${sessionCount(session)} 人`;
       info.appendChild(title); info.appendChild(sub);
+
+      const actions = document.createElement("div"); actions.className = "s-actions";
+      const delBtn = document.createElement("button"); delBtn.type = "button"; delBtn.className = "danger";
+      delBtn.textContent = "刪除球局";
+      delBtn.addEventListener("click", () => {
+        if (confirm(`確定要刪除「${sessionLabel(session)}」這個球局嗎？目前有 ${sessionCount(session)} 人報名，刪除後無法復原。`)) {
+          deleteSessionAndRefresh(dateKey, session.id);
+        }
+      });
       const btn = document.createElement("button"); btn.type = "button";
       btn.textContent = myCountInSession(session) > 0 ? "編輯" : "報名";
       btn.addEventListener("click", () => { closePicker(); openSheet(dateKey, session.id); });
-      item.appendChild(info); item.appendChild(btn);
+      actions.appendChild(delBtn); actions.appendChild(btn);
+
+      item.appendChild(info); item.appendChild(actions);
       sessionListEl.appendChild(item);
     });
     pickerBackdrop.classList.add("open");
@@ -740,6 +754,22 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     if (session) openSheet(dateKey, session.id);
   });
   pickerBackdrop.addEventListener("click", (e) => { if (e.target === pickerBackdrop) closePicker(); });
+
+  async function deleteSessionAndRefresh(dateKey, sessionId) {
+    const idToken = freshIdToken();
+    if (!idToken) { handleExpiredSession(); return; }
+    try {
+      const res = await fetch("/api/session/delete", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, groupId, month: monthKey, date: dateKey, sessionId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        daysData = data.days; render();
+        if (daySessions(dateKey).length > 0) openPicker(dateKey); else closePicker();
+      } else if (res.status === 401) handleExpiredSession();
+    } catch (e) { connText.textContent = "網路異常，請重試"; }
+  }
 
   async function createSession(dateKey) {
     const idToken = freshIdToken();
