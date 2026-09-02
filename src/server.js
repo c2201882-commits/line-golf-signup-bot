@@ -4,7 +4,7 @@ const line = require("@line/bot-sdk");
 const { parseMessage } = require("./parser");
 const {
   applyEntries, getMonth, monthKey, canonicalDate, addSession, setVote, setSession, load, save,
-  getBoard, addBoardMessage, deleteBoardMessage, setBoardPin,
+  getBoard, addBoardMessage, deleteBoardMessage, setBoardPin, getActivity,
 } = require("./store");
 const { formatSummary, HELP_TEXT, buildMenuQuickReply } = require("./summary");
 const { verifyIdToken } = require("./lineAuth");
@@ -124,6 +124,12 @@ app.post("/api/session", async (req, res) => {
 });
 
 // ---- Message board ----------------------------------------------------------
+
+app.get("/api/activity", (req, res) => {
+  const { groupId } = req.query;
+  if (!groupId) return res.status(400).json({ error: "groupId is required" });
+  res.json({ activity: getActivity(groupId) });
+});
 
 app.get("/api/board", (req, res) => {
   const { groupId } = req.query;

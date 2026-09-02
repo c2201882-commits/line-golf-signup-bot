@@ -70,6 +70,27 @@ function lineKey(lineUserId) {
   return "line:" + lineUserId;
 }
 
+function shortDate(dateKey) {
+  const [, m, d] = dateKey.split("-");
+  return `${Number(m)}/${Number(d)}`;
+}
+
+// Appends to data[groupId].activity in place (caller still does load/save).
+// Capped so the file doesn't grow forever; the API only ever serves the
+// most recent 20 anyway.
+function pushActivity(data, groupId, entry) {
+  if (!data[groupId]) data[groupId] = {};
+  if (!Array.isArray(data[groupId].activity)) data[groupId].activity = [];
+  data[groupId].activity.push({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    createdAt: Date.now(),
+    ...entry,
+  });
+  if (data[groupId].activity.length > 200) {
+    data[groupId].activity = data[groupId].activity.slice(-200);
+  }
+}
+
 function newSessionId() {
   return `s-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -185,6 +206,7 @@ function setVote(groupId, mKey, dateKey, sessionId, { lineUserId, displayName, c
     delete session.entries[key];
   } else {
     session.entries[key] = { displayName, count, guestNames: guestNames || [], updatedAt: Date.now() };
+    pushActivity(data, groupId, { type: "join", displayName, detail: shortDate(dateKey) });
   }
 
   if (Object.keys(session.entries).length === 0) {
@@ -234,8 +256,19 @@ function addBoardMessage(groupId, { lineUserId, displayName, pictureUrl, text })
     createdAt: Date.now(),
   };
   data[groupId].board.push(message);
+  pushActivity(data, groupId, { type: "board", displayName });
   save(data);
   return data[groupId].board;
+}
+
+// ---- activity feed ----------------------------------------------------------
+// The most recent 20 "who did what" events across sign-ups and the board,
+// newest first — a lightweight combined feed, not a full audit log.
+
+function getActivity(groupId) {
+  const data = load();
+  const activity = (data[groupId] && data[groupId].activity) || [];
+  return activity.slice(-20).reverse();
 }
 
 // Both mutations require the caller's lineUserId to match the message's
@@ -280,4 +313,5 @@ module.exports = {
   addBoardMessage,
   deleteBoardMessage,
   setBoardPin,
+  getActivity,
 };
