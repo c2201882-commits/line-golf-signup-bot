@@ -134,6 +134,60 @@ function setSession(groupId, mKey, dateKey, { course, teeTime }) {
   return month;
 }
 
+// ---- message board ---------------------------------------------------------
+// Stored per group as data[groupId].board = [{ id, lineUserId, displayName,
+// pictureUrl, text, pinned, createdAt }], independent of month.
+
+function getBoard(groupId) {
+  const data = load();
+  return (data[groupId] && data[groupId].board) || [];
+}
+
+function addBoardMessage(groupId, { lineUserId, displayName, pictureUrl, text }) {
+  const data = load();
+  if (!data[groupId]) data[groupId] = {};
+  if (!Array.isArray(data[groupId].board)) data[groupId].board = [];
+
+  const message = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    lineUserId,
+    displayName,
+    pictureUrl: pictureUrl || null,
+    text,
+    pinned: false,
+    createdAt: Date.now(),
+  };
+  data[groupId].board.push(message);
+  save(data);
+  return data[groupId].board;
+}
+
+// Both mutations require the caller's lineUserId to match the message's
+// author — enforced here, not just hidden client-side.
+function deleteBoardMessage(groupId, messageId, lineUserId) {
+  const data = load();
+  const board = (data[groupId] && data[groupId].board) || [];
+  const message = board.find((m) => m.id === messageId);
+  if (!message) return { ok: true, board };
+  if (message.lineUserId !== lineUserId) return { ok: false, board };
+
+  data[groupId].board = board.filter((m) => m.id !== messageId);
+  save(data);
+  return { ok: true, board: data[groupId].board };
+}
+
+function setBoardPin(groupId, messageId, lineUserId, pinned) {
+  const data = load();
+  const board = (data[groupId] && data[groupId].board) || [];
+  const message = board.find((m) => m.id === messageId);
+  if (!message) return { ok: true, board };
+  if (message.lineUserId !== lineUserId) return { ok: false, board };
+
+  message.pinned = !!pinned;
+  save(data);
+  return { ok: true, board };
+}
+
 module.exports = {
   load,
   save,
@@ -145,4 +199,8 @@ module.exports = {
   setSession,
   nameSlug,
   lineKey,
+  getBoard,
+  addBoardMessage,
+  deleteBoardMessage,
+  setBoardPin,
 };

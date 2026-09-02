@@ -6,129 +6,148 @@
 <title>高爾夫開團表</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
 :root {
-  --bg: #f3fbf6;
+  --bg: #f7f4ee;
   --surface: #ffffff;
-  --surface-2: #e9f9f0;
-  --border: #cdecdc;
-  --text: #163227;
-  --muted: #5f7d6d;
-  --accent: #16c172;
-  --accent-strong: #0ea15d;
-  --accent-soft: #ddf7e8;
-  --gold: #ffa900;
-  --gold-soft: #fff2d6;
-  --danger: #f0483f;
-  --status-none: #16c172;
-  --status-none-soft: #ddf7e8;
-  --status-low: #e0a500;
-  --status-low-soft: #fdf0cc;
-  --status-full: #2f7de0;
-  --status-full-soft: #dcebfd;
-  --shadow: rgba(22, 90, 60, 0.08);
+  --surface-2: #efe9df;
+  --border: #e0d9cb;
+  --text: #3a352e;
+  --muted: #8a8275;
+  --accent: #7c8c6a;
+  --accent-strong: #5f6f4f;
+  --accent-soft: #e7ebe0;
+  --status-none: #8a9a7e;
+  --status-none-soft: #eef1e9;
+  --status-low: #b98f3f;
+  --status-low-soft: #f5ecd8;
+  --status-full: #6c8598;
+  --status-full-soft: #e7edf1;
+  --danger: #b5574a;
+  --danger-soft: #f3e4e0;
+  --shadow: rgba(50, 40, 20, 0.06);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0e1f17; --surface: #15291f; --surface-2: #1b3327; --border: #2a4a3a;
-    --text: #eafbf1; --muted: #9fc2ae; --accent: #35e08f; --accent-strong: #6df7b3;
-    --accent-soft: #1f4433; --gold: #ffce4d; --gold-soft: #3a2f12; --danger: #ff8177;
-    --status-none: #35e08f; --status-none-soft: #1f4433;
-    --status-low: #ffcf4d; --status-low-soft: #3a2f12;
-    --status-full: #6ba9ff; --status-full-soft: #1c2f4a;
-    --shadow: rgba(0, 0, 0, 0.4);
+    --bg: #211f1b; --surface: #2a2723; --surface-2: #332f29; --border: #423e35;
+    --text: #ece7dd; --muted: #a89f8f; --accent: #9db384; --accent-strong: #b8cf9e;
+    --accent-soft: #343c2d; --status-none: #9db384; --status-none-soft: #313829;
+    --status-low: #d1af6a; --status-low-soft: #3a3120; --status-full: #93aebe; --status-full-soft: #2a333b;
+    --danger: #d1867a; --danger-soft: #3c2b27;
+    --shadow: rgba(0, 0, 0, 0.35);
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0e1f17; --surface: #15291f; --surface-2: #1b3327; --border: #2a4a3a;
-  --text: #eafbf1; --muted: #9fc2ae; --accent: #35e08f; --accent-strong: #6df7b3;
-  --accent-soft: #1f4433; --gold: #ffce4d; --gold-soft: #3a2f12; --danger: #ff8177;
-  --status-none: #35e08f; --status-none-soft: #1f4433;
-  --status-low: #ffcf4d; --status-low-soft: #3a2f12;
-  --status-full: #6ba9ff; --status-full-soft: #1c2f4a;
-  --shadow: rgba(0, 0, 0, 0.4);
+  --bg: #211f1b; --surface: #2a2723; --surface-2: #332f29; --border: #423e35;
+  --text: #ece7dd; --muted: #a89f8f; --accent: #9db384; --accent-strong: #b8cf9e;
+  --accent-soft: #343c2d; --status-none: #9db384; --status-none-soft: #313829;
+  --status-low: #d1af6a; --status-low-soft: #3a3120; --status-full: #93aebe; --status-full-soft: #2a333b;
+  --danger: #d1867a; --danger-soft: #3c2b27;
+  --shadow: rgba(0, 0, 0, 0.35);
 }
 * { box-sizing: border-box; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
-  font-family: "Public Sans", -apple-system, "Segoe UI", sans-serif;
+  font-family: "Noto Sans TC", "Zen Maru Gothic", -apple-system, "Segoe UI", sans-serif;
   min-height: 100vh; -webkit-font-smoothing: antialiased;
 }
-.wrap { max-width: 760px; margin: 0 auto; padding: 28px 16px 72px; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
 
 header.top {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
-  gap: 14px; margin-bottom: 8px; padding-bottom: 18px; border-bottom: 1px solid var(--border);
+  gap: 14px; margin-bottom: 4px;
 }
-.eyebrow {
-  font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--accent-strong); margin: 0 0 4px;
-}
+.eyebrow { font-size: 12px; letter-spacing: 0.04em; color: var(--muted); margin: 0 0 4px; }
 .month-row { display: flex; align-items: center; gap: 10px; }
 h1 {
-  font-family: "Fraunces", Georgia, serif; font-weight: 600;
-  font-size: clamp(22px, 6vw, 30px); margin: 0; text-wrap: balance; letter-spacing: -0.01em;
+  font-family: "Zen Maru Gothic", "Noto Sans TC", sans-serif; font-weight: 500;
+  font-size: clamp(20px, 5.5vw, 26px); margin: 0; text-wrap: balance; letter-spacing: 0.01em;
 }
 .month-nav {
-  display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center; width: 30px; height: 30px;
   border-radius: 50%; border: 1px solid var(--border); background: var(--surface);
-  color: var(--text); font-size: 15px; cursor: pointer; flex-shrink: 0;
+  color: var(--text); font-size: 14px; cursor: pointer; flex-shrink: 0;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 .month-nav:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
 .month-nav:disabled { opacity: 0.35; cursor: not-allowed; }
 
+.account { position: relative; }
 .me {
   display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted);
+  background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 999px;
+  transition: background 0.15s ease;
 }
+.me:hover { background: var(--surface-2); }
 .me img { width: 26px; height: 26px; border-radius: 50%; }
+.me .chev { font-size: 10px; color: var(--muted); }
+.account-menu {
+  position: absolute; right: 0; top: calc(100% + 6px); min-width: 140px; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 4px 16px var(--shadow);
+  display: none; overflow: hidden; z-index: 40;
+}
+.account-menu.open { display: block; }
+.account-menu button {
+  width: 100%; text-align: left; padding: 10px 14px; font-size: 13px; background: none; border: none;
+  color: var(--text); cursor: pointer; font-family: inherit;
+}
+.account-menu button:hover { background: var(--surface-2); }
+
+.tabs { display: flex; gap: 6px; margin: 18px 0 20px; border-bottom: 1px solid var(--border); }
+.tab-btn {
+  font-family: inherit; font-size: 14px; font-weight: 500; padding: 10px 4px; margin-bottom: -1px;
+  background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer;
+}
+.tab-btn.active { color: var(--accent-strong); border-bottom-color: var(--accent); }
+.view { display: none; }
+.view.active { display: block; }
 
 .status-line {
-  font-size: 12.5px; color: var(--muted); margin: 14px 0 24px; display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--muted); margin: 0 0 20px; display: flex; align-items: center; gap: 8px;
 }
-.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 .dot.offline { background: var(--danger); }
 
 section.summary {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-  padding: 18px 18px; margin-bottom: 26px; box-shadow: 0 1px 2px var(--shadow);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 16px; margin-bottom: 22px; box-shadow: 0 1px 2px var(--shadow);
 }
-.summary-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-section.summary h2 { font-family: "Fraunces", serif; font-size: 17px; font-weight: 600; margin: 0 0 4px; }
-.summary .sub { font-size: 12.5px; color: var(--muted); margin: 0; }
+.summary-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+section.summary h2 { font-family: "Zen Maru Gothic", sans-serif; font-size: 16px; font-weight: 500; margin: 0 0 4px; }
+.summary .sub { font-size: 12px; color: var(--muted); margin: 0; }
 .copy-btn {
-  flex-shrink: 0; font-family: "Public Sans", sans-serif; font-weight: 600; font-size: 12.5px;
-  padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2);
+  flex-shrink: 0; font-family: inherit; font-weight: 500; font-size: 12px;
+  padding: 7px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2);
   color: var(--text); cursor: pointer; transition: border-color 0.15s ease, background 0.15s ease;
 }
 .copy-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
 .copy-btn.copied { border-color: var(--accent); color: var(--accent-strong); }
-.confirmed-list { display: flex; flex-direction: column; gap: 10px; }
+.confirmed-list { display: flex; flex-direction: column; gap: 8px; }
 .confirmed-row {
-  display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 10px;
-  background: var(--gold-soft); border: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 9px;
+  background: var(--surface-2); border: 1px solid var(--border);
 }
-.confirmed-row .headline { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.confirmed-row .rank { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--gold); font-weight: 600; width: 18px; flex-shrink: 0; }
-.confirmed-row .date-label { font-family: "Fraunces", serif; font-weight: 600; font-size: 15px; flex-shrink: 0; }
-.confirmed-row .players { font-size: 12.5px; color: var(--muted); flex: 1; min-width: 100px; overflow-wrap: anywhere; }
-.confirmed-row .count { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; font-weight: 600; color: var(--accent-strong); flex-shrink: 0; }
+.confirmed-row .headline { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.confirmed-row .rank { font-size: 11px; color: var(--muted); font-weight: 500; width: 18px; flex-shrink: 0; }
+.confirmed-row .date-label { font-family: "Zen Maru Gothic", sans-serif; font-weight: 500; font-size: 14px; flex-shrink: 0; }
+.confirmed-row .players { font-size: 12px; color: var(--muted); flex: 1; min-width: 100px; overflow-wrap: anywhere; }
+.confirmed-row .count { font-size: 12px; font-weight: 500; color: var(--accent-strong); flex-shrink: 0; }
 .confirmed-row .fields { display: grid; grid-template-columns: 1fr 120px; gap: 8px; }
 .confirmed-row .fields input {
-  font-family: inherit; font-size: 13px; padding: 7px 9px; border-radius: 7px; border: 1px solid var(--border);
+  font-family: inherit; font-size: 13px; padding: 7px 9px; border-radius: 6px; border: 1px solid var(--border);
   background: var(--surface); color: var(--text); outline: none; width: 100%; transition: border-color 0.15s ease;
 }
 .confirmed-row .fields input:focus { border-color: var(--accent); }
 .confirmed-row .fields input::placeholder { color: var(--muted); }
 @media (max-width: 460px) { .confirmed-row .fields { grid-template-columns: 1fr; } }
 .confirmed-row.past { opacity: 0.6; }
-.empty-note { font-size: 12.5px; color: var(--muted); font-style: italic; }
+.empty-note { font-size: 12px; color: var(--muted); }
 
 .list-toggle {
-  font-family: "Public Sans", sans-serif; font-weight: 600; font-size: 12.5px;
-  padding: 9px 12px; border-radius: 9px; border: 1px dashed var(--border); background: transparent;
+  font-family: inherit; font-weight: 500; font-size: 12px;
+  padding: 9px 12px; border-radius: 8px; border: 1px dashed var(--border); background: transparent;
   color: var(--muted); cursor: pointer; text-align: center; transition: border-color 0.15s ease, color 0.15s ease;
 }
 .list-toggle:hover { border-color: var(--accent); color: var(--accent-strong); }
@@ -136,78 +155,111 @@ section.summary h2 { font-family: "Fraunces", serif; font-size: 17px; font-weigh
 
 .cal-weekday-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 6px; }
 .cal-weekday-row span {
-  text-align: center; font-family: "IBM Plex Mono", monospace; font-size: 10.5px;
-  letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+  text-align: center; font-size: 10.5px; letter-spacing: 0.04em; color: var(--muted);
 }
 .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
 .day-card {
-  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 9px;
   padding: 7px 5px 6px; display: flex; flex-direction: column; gap: 4px; min-height: 78px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 .day-card.empty { background: transparent; border: none; }
-.day-card.voted { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.day-card.voted { border-color: var(--accent); }
 .day-card.weekend .daynum { color: var(--accent-strong); }
 .day-card.past { opacity: 0.5; }
 .day-card.past .daynum { text-decoration: line-through; color: var(--muted); }
 .day-card.past.weekend .daynum { color: var(--muted); }
-.day-card .daynum { font-family: "Fraunces", serif; font-size: 16px; font-weight: 600; line-height: 1; }
+.day-card .daynum { font-family: "Zen Maru Gothic", sans-serif; font-size: 15px; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
 .day-card .count-badge {
-  font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 600;
+  font-size: 10px; font-weight: 500;
   border-radius: 999px; padding: 1px 6px; align-self: flex-start;
 }
 .day-card .count-badge.status-none { color: var(--status-none); background: var(--status-none-soft); }
 .day-card .count-badge.status-low { color: var(--status-low); background: var(--status-low-soft); }
 .day-card .count-badge.status-full { color: var(--status-full); background: var(--status-full-soft); }
 .day-card button.toggle {
-  margin-top: auto; font-family: "Public Sans", sans-serif; font-weight: 600; font-size: 11px;
-  padding: 5px 4px; border-radius: 6px; border: 1px solid var(--accent); background: transparent;
-  color: var(--accent-strong); cursor: pointer; transition: background 0.15s ease, color 0.15s ease;
+  margin-top: auto; font-family: inherit; font-weight: 500; font-size: 11px;
+  padding: 5px 4px; border-radius: 6px; border: 1px solid var(--border); background: transparent;
+  color: var(--muted); cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
-.day-card button.toggle:hover { background: var(--accent-soft); }
-.day-card.voted button.toggle { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+.day-card button.toggle:hover { border-color: var(--accent); color: var(--accent-strong); }
+.day-card.voted button.toggle { background: var(--accent); color: #fff; border-color: var(--accent); }
 .day-card.voted button.toggle:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
 
 /* headcount picker sheet */
 .sheet-backdrop {
-  position: fixed; inset: 0; background: rgba(16, 21, 15, 0.45); display: none;
+  position: fixed; inset: 0; background: rgba(30, 27, 20, 0.4); display: none;
   align-items: flex-end; justify-content: center; z-index: 50;
 }
 .sheet-backdrop.open { display: flex; }
 .sheet {
-  background: var(--surface); border-radius: 18px 18px 0 0; padding: 22px 20px calc(22px + env(safe-area-inset-bottom));
+  background: var(--surface); border-radius: 16px 16px 0 0; padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
   width: 100%; max-width: 480px; box-shadow: 0 -4px 24px var(--shadow);
 }
-.sheet h3 { font-family: "Fraunces", serif; font-size: 17px; margin: 0 0 4px; }
-.sheet .sheet-sub { font-size: 12.5px; color: var(--muted); margin: 0 0 18px; }
+.sheet h3 { font-family: "Zen Maru Gothic", sans-serif; font-size: 16px; font-weight: 500; margin: 0 0 4px; }
+.sheet .sheet-sub { font-size: 12px; color: var(--muted); margin: 0 0 18px; }
 .stepper { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 20px; }
 .stepper button {
-  width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-2);
-  color: var(--text); font-size: 20px; cursor: pointer; line-height: 1;
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text); font-size: 18px; cursor: pointer; line-height: 1;
 }
 .stepper button:hover { border-color: var(--accent); }
 .stepper .count-display {
-  font-family: "Fraunces", serif; font-size: 30px; font-weight: 600; min-width: 48px; text-align: center;
+  font-family: "Zen Maru Gothic", sans-serif; font-size: 26px; font-weight: 500; min-width: 44px; text-align: center;
 }
 .guest-names { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
 .guest-names input {
-  font-family: inherit; font-size: 14px; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border);
+  font-family: inherit; font-size: 14px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
   background: var(--surface-2); color: var(--text); outline: none; width: 100%; transition: border-color 0.15s ease;
 }
 .guest-names input:focus { border-color: var(--accent); background: var(--surface); }
 .guest-names input::placeholder { color: var(--muted); }
 .sheet-actions { display: flex; gap: 10px; }
 .sheet-actions button {
-  flex: 1; font-family: "Public Sans", sans-serif; font-weight: 700; font-size: 14px;
-  padding: 12px; border-radius: 10px; cursor: pointer; border: 1px solid transparent;
+  flex: 1; font-family: inherit; font-weight: 600; font-size: 14px;
+  padding: 12px; border-radius: 9px; cursor: pointer; border: 1px solid transparent;
 }
-.sheet-actions .primary { background: var(--accent); color: var(--surface); }
+.sheet-actions .primary { background: var(--accent); color: #fff; }
 .sheet-actions .primary:hover { background: var(--accent-strong); }
 .sheet-actions .ghost { background: transparent; border-color: var(--border); color: var(--text); }
 .sheet-actions .ghost:hover { border-color: var(--danger); color: var(--danger); }
 
-button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-align: center; }
+/* message board */
+.board-composer { margin-bottom: 20px; }
+.board-composer textarea {
+  width: 100%; font-family: inherit; font-size: 14px; padding: 12px 14px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text); resize: vertical;
+  min-height: 72px; outline: none; transition: border-color 0.15s ease;
+}
+.board-composer textarea:focus { border-color: var(--accent); }
+.board-composer .row { display: flex; justify-content: flex-end; margin-top: 8px; }
+.board-composer button {
+  font-family: inherit; font-weight: 600; font-size: 13px; padding: 9px 16px; border-radius: 8px;
+  border: 1px solid transparent; background: var(--accent); color: #fff; cursor: pointer;
+}
+.board-composer button:hover { background: var(--accent-strong); }
+.board-composer button:disabled { opacity: 0.4; cursor: not-allowed; }
+.board-list { display: flex; flex-direction: column; gap: 10px; }
+.board-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+}
+.board-card.pinned { border-color: var(--status-low); background: var(--status-low-soft); }
+.board-card .b-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.board-card .b-head img { width: 22px; height: 22px; border-radius: 50%; }
+.board-card .b-name { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.board-card .b-time { font-size: 11px; color: var(--muted); margin-left: auto; }
+.board-card .b-text { font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.board-card .b-actions { display: flex; gap: 6px; margin-top: 8px; }
+.board-card .b-actions button {
+  font-family: inherit; font-size: 11.5px; padding: 5px 9px; border-radius: 6px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); cursor: pointer;
+}
+.board-card .b-actions button:hover { border-color: var(--accent); color: var(--accent-strong); }
+.board-card .b-actions button.danger:hover { border-color: var(--danger); color: var(--danger); }
+.board-card .pin-flag { font-size: 11px; color: var(--status-low); font-weight: 600; margin-right: 6px; }
+
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-align: center; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -222,27 +274,51 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
         <button class="month-nav" id="next-month" type="button" aria-label="下個月">›</button>
       </div>
     </div>
-    <div class="me" id="me-box">連接 LINE 中…</div>
+    <div class="account">
+      <button type="button" class="me" id="me-box">連接 LINE 中…</button>
+      <div class="account-menu" id="account-menu">
+        <button type="button" id="logout-btn">登出 / 切換帳號</button>
+      </div>
+    </div>
   </header>
+
+  <div class="tabs">
+    <button type="button" class="tab-btn active" id="tab-signup">報名球局</button>
+    <button type="button" class="tab-btn" id="tab-board">留言板</button>
+  </div>
 
   <p class="status-line"><span class="dot" id="conn-dot"></span><span id="conn-text">連線中…</span></p>
 
-  <section class="summary">
-    <div class="summary-head">
-      <div>
-        <h2>本月開團球局</h2>
-        <p class="sub">任何有人報名的日期即成團，依日期先後排列</p>
+  <div class="view active" id="view-signup">
+    <section class="summary">
+      <div class="summary-head">
+        <div>
+          <h2>本月開團球局</h2>
+          <p class="sub">任何有人報名的日期即成團，依日期先後排列</p>
+        </div>
+        <button type="button" class="copy-btn" id="copy-btn">複製名單</button>
       </div>
-      <button type="button" class="copy-btn" id="copy-btn">複製名單</button>
-    </div>
-    <div class="confirmed-list" id="confirmed-list">
-      <p class="empty-note">目前還沒有人報名</p>
-    </div>
-  </section>
+      <div class="confirmed-list" id="confirmed-list">
+        <p class="empty-note">目前還沒有人報名</p>
+      </div>
+    </section>
 
-  <div id="calendar"></div>
+    <div id="calendar"></div>
 
-  <footer class="note">報名即時同步給所有人 · 可以幫朋友一起報名</footer>
+    <footer class="note">報名即時同步給所有人 · 可以幫朋友一起報名</footer>
+  </div>
+
+  <div class="view" id="view-board">
+    <div class="board-composer">
+      <textarea id="board-input" placeholder="留言給大家看看…" maxlength="500"></textarea>
+      <div class="row">
+        <button type="button" id="board-post">發表留言</button>
+      </div>
+    </div>
+    <div class="board-list" id="board-list">
+      <p class="empty-note">還沒有人留言</p>
+    </div>
+  </div>
 </div>
 
 <div class="sheet-backdrop" id="sheet-backdrop">
@@ -308,6 +384,31 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
   const prevBtn = document.getElementById("prev-month");
   const nextBtn = document.getElementById("next-month");
   const cycleLabel = document.getElementById("cycle-label");
+
+  // ---- tabs ----
+  const tabSignup = document.getElementById("tab-signup");
+  const tabBoard = document.getElementById("tab-board");
+  const viewSignup = document.getElementById("view-signup");
+  const viewBoard = document.getElementById("view-board");
+  tabSignup.addEventListener("click", () => switchTab("signup"));
+  tabBoard.addEventListener("click", () => switchTab("board"));
+  function switchTab(name) {
+    const toSignup = name === "signup";
+    tabSignup.classList.toggle("active", toSignup);
+    tabBoard.classList.toggle("active", !toSignup);
+    viewSignup.classList.toggle("active", toSignup);
+    viewBoard.classList.toggle("active", !toSignup);
+    if (!toSignup) loadBoard();
+  }
+
+  // ---- account menu ----
+  const accountMenu = document.getElementById("account-menu");
+  meBox.addEventListener("click", (e) => { e.stopPropagation(); accountMenu.classList.toggle("open"); });
+  document.addEventListener("click", () => accountMenu.classList.remove("open"));
+  document.getElementById("logout-btn").addEventListener("click", () => {
+    try { liff.logout(); } catch (e) {}
+    location.reload();
+  });
 
   function isAtFloor() { return target.year === floorMonth.year && target.month === floorMonth.month; }
 
@@ -668,11 +769,120 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
     }
   }
 
+  // ---- message board ----
+  const boardInput = document.getElementById("board-input");
+  const boardPostBtn = document.getElementById("board-post");
+  const boardListEl = document.getElementById("board-list");
+  let boardMessages = [];
+  let boardLoaded = false;
+
+  function timeLabel(ts) {
+    const d = new Date(ts);
+    return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function renderBoard() {
+    boardListEl.innerHTML = "";
+    if (boardMessages.length === 0) {
+      const p = document.createElement("p"); p.className = "empty-note"; p.textContent = "還沒有人留言";
+      boardListEl.appendChild(p);
+      return;
+    }
+    const sorted = boardMessages.slice().sort((a, b) => {
+      if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+      return b.createdAt - a.createdAt;
+    });
+    sorted.forEach((m) => {
+      const card = document.createElement("div"); card.className = "board-card" + (m.pinned ? " pinned" : "");
+      const head = document.createElement("div"); head.className = "b-head";
+      if (m.pinned) { const flag = document.createElement("span"); flag.className = "pin-flag"; flag.textContent = "📌 置頂"; head.appendChild(flag); }
+      if (m.pictureUrl) { const img = document.createElement("img"); img.src = m.pictureUrl; head.appendChild(img); }
+      const name = document.createElement("span"); name.className = "b-name"; name.textContent = m.displayName || "球友";
+      const time = document.createElement("span"); time.className = "b-time"; time.textContent = timeLabel(m.createdAt);
+      head.appendChild(name); head.appendChild(time);
+
+      const text = document.createElement("div"); text.className = "b-text"; text.textContent = m.text;
+
+      card.appendChild(head); card.appendChild(text);
+
+      if (m.lineUserId === myUserId) {
+        const actions = document.createElement("div"); actions.className = "b-actions";
+        const pinBtn = document.createElement("button"); pinBtn.type = "button";
+        pinBtn.textContent = m.pinned ? "取消置頂" : "置頂";
+        pinBtn.addEventListener("click", () => boardSetPin(m.id, !m.pinned));
+        const delBtn = document.createElement("button"); delBtn.type = "button"; delBtn.className = "danger";
+        delBtn.textContent = "刪除";
+        delBtn.addEventListener("click", () => { if (confirm("確定要刪除這則留言嗎？")) boardDelete(m.id); });
+        actions.appendChild(pinBtn); actions.appendChild(delBtn);
+        card.appendChild(actions);
+      }
+
+      boardListEl.appendChild(card);
+    });
+  }
+
+  async function loadBoard() {
+    try {
+      const res = await fetch(`/api/board?groupId=${encodeURIComponent(groupId)}`);
+      const data = await res.json();
+      boardMessages = data.messages || [];
+      boardLoaded = true;
+      renderBoard();
+    } catch (e) {}
+  }
+
+  boardPostBtn.addEventListener("click", async () => {
+    const text = boardInput.value.trim();
+    if (!text) return;
+    const idToken = freshIdToken();
+    if (!idToken) return handleExpiredSession();
+    boardPostBtn.disabled = true;
+    try {
+      const res = await fetch("/api/board/post", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, groupId, text }),
+      });
+      const data = await res.json();
+      if (res.ok) { boardMessages = data.messages; boardInput.value = ""; renderBoard(); }
+      else if (res.status === 401) handleExpiredSession();
+    } catch (e) {}
+    boardPostBtn.disabled = false;
+  });
+
+  async function boardDelete(messageId) {
+    const idToken = freshIdToken();
+    if (!idToken) return handleExpiredSession();
+    try {
+      const res = await fetch("/api/board/delete", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, groupId, messageId }),
+      });
+      const data = await res.json();
+      if (res.ok) { boardMessages = data.messages; renderBoard(); }
+    } catch (e) {}
+  }
+
+  async function boardSetPin(messageId, pinned) {
+    const idToken = freshIdToken();
+    if (!idToken) return handleExpiredSession();
+    try {
+      const res = await fetch("/api/board/pin", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, groupId, messageId, pinned }),
+      });
+      const data = await res.json();
+      if (res.ok) { boardMessages = data.messages; renderBoard(); }
+    } catch (e) {}
+  }
+
   let pendingRender = false;
   let pollTimer = null;
   function startPolling() {
     if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(() => loadState({ silent: true }), 4000);
+    pollTimer = setInterval(() => {
+      loadState({ silent: true });
+      if (viewBoard.classList.contains("active")) loadBoard();
+    }, 4000);
   }
   document.addEventListener("focusout", () => {
     setTimeout(() => {
@@ -714,8 +924,10 @@ footer.note { margin-top: 32px; font-size: 11.5px; color: var(--muted); text-ali
       meBox.innerHTML = "";
       const img = document.createElement("img"); img.src = profile.pictureUrl || "";
       const name = document.createElement("span"); name.textContent = profile.displayName;
+      const chev = document.createElement("span"); chev.className = "chev"; chev.textContent = "▾";
       if (profile.pictureUrl) meBox.appendChild(img);
       meBox.appendChild(name);
+      meBox.appendChild(chev);
 
       await loadState();
       startPolling();

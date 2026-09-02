@@ -2,7 +2,10 @@ const path = require("path");
 const express = require("express");
 const line = require("@line/bot-sdk");
 const { parseMessage } = require("./parser");
-const { applyEntries, getMonth, monthKey, canonicalDate, setVote, setSession, load, save } = require("./store");
+const {
+  applyEntries, getMonth, monthKey, canonicalDate, setVote, setSession, load, save,
+  getBoard, addBoardMessage, deleteBoardMessage, setBoardPin,
+} = require("./store");
 const { formatSummary, HELP_TEXT, buildMenuQuickReply } = require("./summary");
 const { verifyIdToken } = require("./lineAuth");
 
@@ -96,6 +99,71 @@ app.post("/api/session", async (req, res) => {
 
   const monthData = setSession(groupId, month, date, { course, teeTime });
   res.json({ days: monthData.days });
+});
+
+// ---- Message board ----------------------------------------------------------
+
+app.get("/api/board", (req, res) => {
+  const { groupId } = req.query;
+  if (!groupId) return res.status(400).json({ error: "groupId is required" });
+  res.json({ messages: getBoard(groupId) });
+});
+
+app.post("/api/board/post", async (req, res) => {
+  const { idToken, groupId, text } = req.body || {};
+  if (!groupId || !text || !String(text).trim()) {
+    return res.status(400).json({ error: "groupId and text are required" });
+  }
+
+  let identity;
+  try {
+    identity = await verifyIdToken(idToken);
+  } catch (err) {
+    console.error("verifyIdToken failed:", err.message || err);
+    return res.status(401).json({ error: "invalid LINE identity", detail: String(err.message || err) });
+  }
+
+  const messages = addBoardMessage(groupId, {
+    lineUserId: identity.lineUserId,
+    displayName: identity.displayName,
+    pictureUrl: identity.pictureUrl,
+    text: String(text).trim().slice(0, 500),
+  });
+  res.json({ messages });
+});
+
+app.post("/api/board/delete", async (req, res) => {
+  const { idToken, groupId, messageId } = req.body || {};
+  if (!groupId || !messageId) return res.status(400).json({ error: "groupId and messageId are required" });
+
+  let identity;
+  try {
+    identity = await verifyIdToken(idToken);
+  } catch (err) {
+    console.error("verifyIdToken failed:", err.message || err);
+    return res.status(401).json({ error: "invalid LINE identity", detail: String(err.message || err) });
+  }
+
+  const result = deleteBoardMessage(groupId, messageId, identity.lineUserId);
+  if (!result.ok) return res.status(403).json({ error: "only the author can delete this message" });
+  res.json({ messages: result.board });
+});
+
+app.post("/api/board/pin", async (req, res) => {
+  const { idToken, groupId, messageId, pinned } = req.body || {};
+  if (!groupId || !messageId) return res.status(400).json({ error: "groupId and messageId are required" });
+
+  let identity;
+  try {
+    identity = await verifyIdToken(idToken);
+  } catch (err) {
+    console.error("verifyIdToken failed:", err.message || err);
+    return res.status(401).json({ error: "invalid LINE identity", detail: String(err.message || err) });
+  }
+
+  const result = setBoardPin(groupId, messageId, identity.lineUserId, !!pinned);
+  if (!result.ok) return res.status(403).json({ error: "only the author can pin this message" });
+  res.json({ messages: result.board });
 });
 
 // ---- Admin backup/restore --------------------------------------------------
