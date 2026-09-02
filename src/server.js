@@ -112,14 +112,15 @@ app.post("/api/session", async (req, res) => {
     return res.status(400).json({ error: "groupId, month, date, sessionId are required" });
   }
 
+  let identity;
   try {
-    await verifyIdToken(idToken); // anyone in the group may edit course/tee-time, but must be a real LINE user
+    identity = await verifyIdToken(idToken); // anyone in the group may edit course/tee-time, but must be a real LINE user
   } catch (err) {
     console.error("verifyIdToken failed:", err.message || err);
     return res.status(401).json({ error: "invalid LINE identity", detail: String(err.message || err) });
   }
 
-  const monthData = setSession(groupId, month, date, sessionId, { course, teeTime });
+  const monthData = setSession(groupId, month, date, sessionId, { course, teeTime, displayName: identity.displayName });
   res.json({ days: monthData.days });
 });
 
@@ -172,7 +173,7 @@ app.post("/api/board/delete", async (req, res) => {
     return res.status(401).json({ error: "invalid LINE identity", detail: String(err.message || err) });
   }
 
-  const result = deleteBoardMessage(groupId, messageId, identity.lineUserId);
+  const result = deleteBoardMessage(groupId, messageId, identity.lineUserId, identity.displayName);
   if (!result.ok) return res.status(403).json({ error: "only the author can delete this message" });
   res.json({ messages: result.board });
 });

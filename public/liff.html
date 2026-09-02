@@ -1105,15 +1105,22 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   const activityListEl = document.getElementById("activity-list");
   let activityItems = [];
 
+  const ACTIVITY_SUFFIX = {
+    join: (item) => ` 加入了 ${item.detail || ""} 的球局`,
+    leave: (item) => ` 退出了 ${item.detail || ""} 的球局`,
+    info: (item) => ` 更新了 ${item.detail || ""} 球局的球場／時間`,
+    board: () => " 在留言板留言",
+    board_delete: () => " 刪除了一則留言",
+  };
+
   function buildActivityText(item) {
     // Built with DOM nodes (not innerHTML) since displayName comes from a
     // LINE profile — untrusted text that must never be parsed as markup.
     const span = document.createElement("span"); span.className = "a-text";
     const nameEl = document.createElement("b"); nameEl.textContent = item.displayName || "球友";
     span.appendChild(nameEl);
-    span.appendChild(document.createTextNode(
-      item.type === "board" ? " 在留言板留言" : ` 加入了 ${item.detail || ""} 的球局`
-    ));
+    const suffix = (ACTIVITY_SUFFIX[item.type] || ACTIVITY_SUFFIX.join)(item);
+    span.appendChild(document.createTextNode(suffix));
     return span;
   }
 

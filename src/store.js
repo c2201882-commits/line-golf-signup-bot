@@ -203,7 +203,9 @@ function setVote(groupId, mKey, dateKey, sessionId, { lineUserId, displayName, c
   const key = lineKey(lineUserId);
 
   if (!count || count <= 0) {
+    const hadEntry = !!session.entries[key];
     delete session.entries[key];
+    if (hadEntry) pushActivity(data, groupId, { type: "leave", displayName, detail: shortDate(dateKey) });
   } else {
     session.entries[key] = { displayName, count, guestNames: guestNames || [], updatedAt: Date.now() };
     pushActivity(data, groupId, { type: "join", displayName, detail: shortDate(dateKey) });
@@ -217,7 +219,7 @@ function setVote(groupId, mKey, dateKey, sessionId, { lineUserId, displayName, c
   return migrateMonthDays(month);
 }
 
-function setSession(groupId, mKey, dateKey, sessionId, { course, teeTime }) {
+function setSession(groupId, mKey, dateKey, sessionId, { course, teeTime, displayName }) {
   const data = load();
   if (!data[groupId]) data[groupId] = {};
   if (!data[groupId][mKey]) data[groupId][mKey] = { days: {} };
@@ -227,6 +229,7 @@ function setSession(groupId, mKey, dateKey, sessionId, { course, teeTime }) {
 
   if (course !== undefined) session.course = course;
   if (teeTime !== undefined) session.teeTime = teeTime;
+  pushActivity(data, groupId, { type: "info", displayName, detail: shortDate(dateKey) });
 
   save(data);
   return migrateMonthDays(month);
@@ -273,7 +276,7 @@ function getActivity(groupId) {
 
 // Both mutations require the caller's lineUserId to match the message's
 // author — enforced here, not just hidden client-side.
-function deleteBoardMessage(groupId, messageId, lineUserId) {
+function deleteBoardMessage(groupId, messageId, lineUserId, displayName) {
   const data = load();
   const board = (data[groupId] && data[groupId].board) || [];
   const message = board.find((m) => m.id === messageId);
@@ -281,6 +284,7 @@ function deleteBoardMessage(groupId, messageId, lineUserId) {
   if (message.lineUserId !== lineUserId) return { ok: false, board };
 
   data[groupId].board = board.filter((m) => m.id !== messageId);
+  pushActivity(data, groupId, { type: "board_delete", displayName });
   save(data);
   return { ok: true, board: data[groupId].board };
 }
