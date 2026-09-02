@@ -122,6 +122,32 @@ section.summary {
 .summary-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 section.summary h2 { font-family: "Zen Maru Gothic", sans-serif; font-size: 16px; font-weight: 500; margin: 0 0 4px; }
 .summary .sub { font-size: 12px; color: var(--muted); margin: 0; }
+
+/* 使用說明 */
+section.summary h3 {
+  font-family: "Zen Maru Gothic", sans-serif; font-size: 14px; font-weight: 500; margin: 18px 0 8px;
+  display: flex; align-items: baseline; gap: 8px;
+}
+section.summary h3:first-of-type { margin-top: 10px; }
+section.summary .step-num {
+  font-family: "Zen Maru Gothic", sans-serif; font-size: 12px; font-weight: 700; color: var(--accent-strong);
+  background: var(--accent-soft); border-radius: 50%; width: 20px; height: 20px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+section.summary p, section.summary li { font-size: 13.5px; line-height: 1.75; color: var(--text); margin: 0 0 6px; }
+section.summary ul, section.summary ol { margin: 0 0 10px; padding-left: 22px; }
+section.summary .note {
+  font-size: 12.5px; color: var(--muted); background: var(--surface-2); border-radius: 8px;
+  padding: 10px 12px; margin-top: 8px;
+}
+section.summary .note a { color: var(--accent-strong); }
+section.summary .tag {
+  display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+  background: var(--status-low-soft); color: var(--status-low); margin-left: 6px;
+}
+section.summary .tag.info { background: var(--status-full-soft); color: var(--status-full); }
+section.summary .tag.danger { background: var(--danger-soft); color: var(--danger); }
+hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 .copy-btn {
   flex-shrink: 0; font-family: inherit; font-weight: 500; font-size: 12px;
   padding: 7px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2);
@@ -338,6 +364,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     <button type="button" class="tab-btn" id="tab-my">我的報名</button>
     <button type="button" class="tab-btn" id="tab-board">留言板</button>
     <button type="button" class="tab-btn" id="tab-activity">最新動態</button>
+    <button type="button" class="tab-btn" id="tab-guide">使用說明</button>
   </div>
 
   <p class="status-line"><span class="dot" id="conn-dot"></span><span id="conn-text">連線中…</span></p>
@@ -387,6 +414,58 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     <div class="activity-list" id="activity-list">
       <p class="empty-note">還沒有任何動態</p>
     </div>
+  </div>
+
+  <div class="view" id="view-guide">
+    <section class="summary">
+      <h2>⛳ 報名球局</h2>
+
+      <h3><span class="step-num">1</span>選日期</h3>
+      <p>在行事曆上點任一天。日期上的顏色代表目前狀態：<span class="tag">綠</span>還沒人報名、<span class="tag">黃</span>已有 1~3 人、<span class="tag">藍</span>4 人以上。</p>
+
+      <h3><span class="step-num">2</span>選人數</h3>
+      <p>報名一律只填「人數」——你自己算第一位，其他欄位可以填幫忙代報的朋友姓名（留空也可以，只算人數）。</p>
+      <p class="note">球場、開球時間不在這一步填，要另外用「編輯球場與開球時間」設定，避免一次跳出太多欄位搞混。</p>
+
+      <h3><span class="step-num">3</span>同一天開多團</h3>
+      <p>如果那天已經有人開團，會先看到「選擇球局」畫面：可以加入現有的球局，或按「＋ 開新的球局」另開一團（例如早團、午團分開報名）。</p>
+
+      <hr class="divider" />
+
+      <h3>已經報名後，要改怎麼辦？</h3>
+      <p>回到那天點「編輯」，會看到三個選項，各自只做一件事：</p>
+      <ul>
+        <li><b>取消報名</b>——直接退出，不會再跳出第二次確認<span class="tag danger">會清除你的名額</span></li>
+        <li><b>更改人數</b>——以你目前報名的人數為基準增減</li>
+        <li><b>編輯球場與開球時間</b><span class="tag info">全員共用</span>——填了之後大家看到的都是同一份資訊</li>
+      </ul>
+      <p class="note">一個球局如果所有人都退出、變成 0 人，系統會自動把這團收掉，不需要也沒有「刪除球局」這個按鈕。</p>
+
+      <hr class="divider" />
+
+      <h3>本月開團球局</h3>
+      <p>報名球局頁面下方會列出這個月所有已成團的日期，預設只顯示最近 3 場，可以「展開球局」看全部；已經打完的球局收在「過去球局」裡，預設收合。</p>
+      <p>右上角「複製名單」可以把整個月的開團資訊複製成文字，直接貼到 LINE 群組公告。</p>
+    </section>
+
+    <section class="summary">
+      <h2>📋 我的報名</h2>
+      <p>只顯示你自己這個月報名過的球局，一眼確認哪幾天已經卡位。未來的球局可以直接點擊，會跳出跟上面一樣的「取消報名／更改人數／編輯球場時間」選單；已經打完的球局則是唯讀，不能再點。</p>
+    </section>
+
+    <section class="summary">
+      <h2>💬 留言板</h2>
+      <p>給大家公告或閒聊用。任何人都可以發文；只有自己發的留言才會看到「置頂」「刪除」按鈕——置頂會排到留言最上面，刪除則會跳出確認訊息避免手滑。</p>
+    </section>
+
+    <section class="summary">
+      <h2>🕓 最新動態</h2>
+      <p>自動記錄最近 20 筆大家的動作，包含報名、退出、編輯球場時間、留言、刪除留言，讓你不用逐一點開就知道群組最近在忙什麼。</p>
+    </section>
+
+    <section class="summary">
+      <p class="note">追蹤我的 IG：<a href="https://www.instagram.com/eric820709" target="_blank" rel="noopener">eric820709</a> 😄</p>
+    </section>
   </div>
 </div>
 
@@ -495,6 +574,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     my: { btn: document.getElementById("tab-my"), view: document.getElementById("view-my") },
     board: { btn: document.getElementById("tab-board"), view: document.getElementById("view-board") },
     activity: { btn: document.getElementById("tab-activity"), view: document.getElementById("view-activity") },
+    guide: { btn: document.getElementById("tab-guide"), view: document.getElementById("view-guide") },
   };
   Object.keys(tabs).forEach((name) => tabs[name].btn.addEventListener("click", () => switchTab(name)));
   function switchTab(active) {
