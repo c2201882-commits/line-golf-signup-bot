@@ -705,10 +705,8 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       if (session) openSheet(dateKey, session.id);
       return;
     }
-    if (sessions.length === 1) {
-      openSheet(dateKey, sessions[0].id);
-      return;
-    }
+    // Any day with at least one session shows the picker — otherwise
+    // there's no way to reach "＋ 開新的球局" once a day already has one.
     openPicker(dateKey);
   }
 
