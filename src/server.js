@@ -3,7 +3,7 @@ const express = require("express");
 const line = require("@line/bot-sdk");
 const { parseMessage } = require("./parser");
 const {
-  applyEntries, getMonth, monthKey, canonicalDate, addSession, deleteSession, setVote, setSession, load, save,
+  applyEntries, getMonth, monthKey, canonicalDate, addSession, setVote, setSession, load, save,
   getBoard, addBoardMessage, deleteBoardMessage, setBoardPin,
 } = require("./store");
 const { formatSummary, HELP_TEXT, buildMenuQuickReply } = require("./summary");
@@ -77,23 +77,6 @@ app.post("/api/session/create", async (req, res) => {
     teeTime: teeTime || "",
   });
   res.json({ days: monthData.days, sessionId });
-});
-
-app.post("/api/session/delete", async (req, res) => {
-  const { idToken, groupId, month, date, sessionId } = req.body || {};
-  if (!groupId || !month || !date || !sessionId) {
-    return res.status(400).json({ error: "groupId, month, date, sessionId are required" });
-  }
-
-  try {
-    await verifyIdToken(idToken); // anyone in the group may remove a session, but must be a real LINE user
-  } catch (err) {
-    console.error("verifyIdToken failed:", err.message || err);
-    return res.status(401).json({ error: "invalid LINE identity", detail: String(err.message || err) });
-  }
-
-  const monthData = deleteSession(groupId, month, date, sessionId);
-  res.json({ days: monthData.days });
 });
 
 app.post("/api/vote", async (req, res) => {

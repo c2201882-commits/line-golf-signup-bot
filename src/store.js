@@ -167,24 +167,11 @@ function addSession(groupId, mKey, dateKey, { course, teeTime } = {}) {
   return { month: migrateMonthDays(month), sessionId: session.id };
 }
 
-// Remove a session entirely (e.g. an empty one nobody ended up using).
-function deleteSession(groupId, mKey, dateKey, sessionId) {
-  const data = load();
-  if (!data[groupId] || !data[groupId][mKey]) return { days: (data[groupId] && data[groupId][mKey] && data[groupId][mKey].days) || {} };
-  const month = data[groupId][mKey];
-  const day = month.days[dateKey];
-  if (day) {
-    migrateDayShape(day);
-    day.sessions = day.sessions.filter((s) => s.id !== sessionId);
-  }
-
-  save(data);
-  return migrateMonthDays(month);
-}
-
 // Web sign-up entry point: set (or clear, when count <= 0) one person's headcount
 // on a specific session. `guestNames` optionally names the extra people this
-// person is signing up alongside themselves.
+// person is signing up alongside themselves. Nobody can delete a session
+// directly — once everyone has left it (no entries remain), it's removed
+// automatically here.
 function setVote(groupId, mKey, dateKey, sessionId, { lineUserId, displayName, count, guestNames }) {
   const data = load();
   if (!data[groupId]) data[groupId] = {};
@@ -198,6 +185,10 @@ function setVote(groupId, mKey, dateKey, sessionId, { lineUserId, displayName, c
     delete session.entries[key];
   } else {
     session.entries[key] = { displayName, count, guestNames: guestNames || [], updatedAt: Date.now() };
+  }
+
+  if (Object.keys(session.entries).length === 0) {
+    day.sessions = day.sessions.filter((s) => s.id !== session.id);
   }
 
   save(data);
@@ -281,7 +272,6 @@ module.exports = {
   getMonth,
   applyEntries,
   addSession,
-  deleteSession,
   setVote,
   setSession,
   nameSlug,
