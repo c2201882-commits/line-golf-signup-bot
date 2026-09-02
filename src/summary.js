@@ -10,7 +10,7 @@ function displayDate(dateKey) {
 function formatSummary(month, mKey, liffUrl) {
   const days = (month && month.days) || {};
   const dateKeys = Object.keys(days)
-    .filter((k) => Object.keys(days[k].entries || {}).length > 0)
+    .filter((k) => (days[k].sessions || []).some((s) => Object.keys(s.entries || {}).length > 0))
     .sort(sortByDateKey);
 
   const openLine = liffUrl ? `\n\n👉 打開報名頁：${liffUrl}` : "";
@@ -21,25 +21,27 @@ function formatSummary(month, mKey, liffUrl) {
 
   const lines = [`⛳ 本月球局彙整（${mKey}）`, ""];
   for (const dateKey of dateKeys) {
-    const day = days[dateKey];
-    const entries = Object.values(day.entries || {});
-    const totalCount = entries.reduce((sum, e) => sum + (e.count || 1), 0);
-    const names = entries.length
-      ? entries.map((e) => (e.count > 1 ? `${e.displayName}x${e.count}` : e.displayName)).join(" ")
-      : "（尚無人報名）";
+    const sessions = (days[dateKey].sessions || []).filter((s) => Object.keys(s.entries || {}).length > 0);
+    for (const session of sessions) {
+      const entries = Object.values(session.entries || {});
+      const totalCount = entries.reduce((sum, e) => sum + (e.count || 1), 0);
+      const names = entries.length
+        ? entries.map((e) => (e.count > 1 ? `${e.displayName}x${e.count}` : e.displayName)).join(" ")
+        : "（尚無人報名）";
 
-    const parts = [];
-    if (day.course) parts.push(day.course);
-    if (day.teeTime) parts.push(day.teeTime);
-    parts.push(names);
+      const parts = [];
+      if (session.course) parts.push(session.course);
+      if (session.teeTime) parts.push(session.teeTime);
+      parts.push(names);
 
-    let countTag = "";
-    if (day.max) {
-      countTag = totalCount >= day.max ? " 🈵滿" : ` (${totalCount}/${day.max})`;
-    } else if (totalCount) {
-      countTag = ` — ${totalCount} 人`;
+      let countTag = "";
+      if (session.max) {
+        countTag = totalCount >= session.max ? " 🈵滿" : ` (${totalCount}/${session.max})`;
+      } else if (totalCount) {
+        countTag = ` — ${totalCount} 人`;
+      }
+      lines.push(`『${displayDate(dateKey)}』：${parts.join(" ")}${countTag}`);
     }
-    lines.push(`『${displayDate(dateKey)}』：${parts.join(" ")}${countTag}`);
   }
   if (liffUrl) lines.push(openLine);
   return lines.join("\n");
@@ -67,7 +69,7 @@ const HELP_TEXT = `⛳ 球局報名機器人使用說明
 【查看說明】
 @球局 help　或　@球局 說明
 
-一天只會開一團，重複輸入同一人不會重複計算。`;
+文字報名一天只會對到第一團；如果同一天想開第二場球局（例如早團＋午團），請用網頁報名頁操作。重複輸入同一人不會重複計算。`;
 
 function buildMenuQuickReply(liffUrl) {
   const items = [];

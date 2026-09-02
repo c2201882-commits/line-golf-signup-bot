@@ -48,11 +48,33 @@
   --shadow: rgba(0, 0, 0, 0.35);
 }
 * { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
   font-family: "Noto Sans TC", "Zen Maru Gothic", -apple-system, "Segoe UI", sans-serif;
   min-height: 100vh; -webkit-font-smoothing: antialiased;
 }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+.hero {
+  min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 40px 20px; gap: 18px;
+}
+.hero .hero-mark { font-size: 40px; }
+.hero h2 {
+  font-family: "Zen Maru Gothic", sans-serif; font-weight: 500; font-size: clamp(24px, 6vw, 34px);
+  margin: 0; text-wrap: balance; letter-spacing: 0.02em;
+}
+.hero p { font-size: 14px; color: var(--muted); margin: 0; max-width: 320px; line-height: 1.7; }
+.hero .scroll-cue {
+  position: absolute; bottom: 28px; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: none; border: none; color: var(--muted); cursor: pointer; font-family: inherit; font-size: 12px;
+}
+.hero-wrap { position: relative; }
+.scroll-arrow { font-size: 18px; animation: bob 1.8s ease-in-out infinite; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) { .scroll-arrow { animation: none; } }
+
 .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
 
 header.top {
@@ -224,6 +246,20 @@ section.summary h2 { font-family: "Zen Maru Gothic", sans-serif; font-size: 16px
 .sheet-actions .ghost { background: transparent; border-color: var(--border); color: var(--text); }
 .sheet-actions .ghost:hover { border-color: var(--danger); color: var(--danger); }
 
+.session-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.session-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 12px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-2);
+}
+.session-item .s-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.session-item .s-title { font-size: 13.5px; font-weight: 500; color: var(--text); }
+.session-item .s-sub { font-size: 11.5px; color: var(--muted); }
+.session-item button {
+  flex-shrink: 0; font-family: inherit; font-weight: 600; font-size: 12.5px; padding: 7px 12px;
+  border-radius: 7px; border: 1px solid var(--accent); background: transparent; color: var(--accent-strong); cursor: pointer;
+}
+.session-item button:hover { background: var(--accent-soft); }
+
 /* message board */
 .board-composer { margin-bottom: 20px; }
 .board-composer textarea {
@@ -264,7 +300,18 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="hero-wrap">
+  <section class="hero">
+    <div class="hero-mark">⛳</div>
+    <h2>球局報名，一起打球</h2>
+    <p>選日期、填人數，也能幫朋友一起報名。向下滑動開始使用。</p>
+  </section>
+  <button type="button" class="scroll-cue" id="scroll-cue">
+    <span class="scroll-arrow">︾</span>
+    開始使用
+  </button>
+</div>
+<div class="wrap" id="main-content">
   <header class="top">
     <div>
       <p class="eyebrow" id="cycle-label">開放投票</p>
@@ -321,6 +368,18 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   </div>
 </div>
 
+<div class="sheet-backdrop" id="picker-backdrop">
+  <div class="sheet">
+    <h3 id="picker-title">選擇球局</h3>
+    <p class="sheet-sub">這天已經有球局了，選一個報名，或是開新的一團（例如早團／午團）</p>
+    <div class="session-list" id="session-list"></div>
+    <div class="sheet-actions">
+      <button type="button" class="ghost" id="picker-cancel">取消</button>
+      <button type="button" class="primary" id="picker-new">＋ 開新的球局</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet-backdrop" id="sheet-backdrop">
   <div class="sheet">
     <h3 id="sheet-title">選擇人數</h3>
@@ -340,6 +399,10 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
 
 <script>
 (function () {
+  document.getElementById("scroll-cue").addEventListener("click", () => {
+    document.getElementById("main-content").scrollIntoView({ behavior: "smooth" });
+  });
+
   const WEEKDAY_NAMES = ["日", "一", "二", "三", "四", "五", "六"];
   function pad(n) { return String(n).padStart(2, "0"); }
 
@@ -437,17 +500,27 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
 
   function dateLabel(dt) { return `${target.month + 1}/${dt.day} (${WEEKDAY_NAMES[dt.dow]})`; }
 
-  function dayEntries(dateKey) {
+  // A day can hold more than one session ("球局") — e.g. a morning and an
+  // afternoon outing on the same date, each with its own course/time/roster.
+  function daySessions(dateKey) {
     const day = daysData[dateKey];
-    return day && day.entries ? Object.entries(day.entries) : [];
+    return (day && day.sessions) || [];
+  }
+  function sessionEntries(session) {
+    return session && session.entries ? Object.entries(session.entries) : [];
+  }
+  function sessionCount(session) {
+    return sessionEntries(session).reduce((sum, [, e]) => sum + (e.count || 1), 0);
   }
   function dayCount(dateKey) {
-    return dayEntries(dateKey).reduce((sum, [, e]) => sum + (e.count || 1), 0);
+    return daySessions(dateKey).reduce((sum, s) => sum + sessionCount(s), 0);
   }
-  function myEntryCount(dateKey) {
-    const entries = daysData[dateKey] && daysData[dateKey].entries;
-    const mine = entries && entries["line:" + myUserId];
+  function myCountInSession(session) {
+    const mine = session && session.entries && session.entries["line:" + myUserId];
     return mine ? mine.count : 0;
+  }
+  function dayHasMyEntry(dateKey) {
+    return daySessions(dateKey).some((s) => myCountInSession(s) > 0);
   }
   function entryLabel(e) {
     const extra = (e.guestNames || []).map((n) => (n || "").trim()).filter(Boolean);
@@ -478,7 +551,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
 
     monthDates.forEach((dt) => {
       const count = dayCount(dt.key);
-      const iVoted = myEntryCount(dt.key) > 0;
+      const iVoted = dayHasMyEntry(dt.key);
       const isWeekend = dt.dow === 0 || dt.dow === 6;
       const isPast = isPastDate(dt.key);
 
@@ -497,7 +570,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       btn.className = "toggle";
       btn.textContent = iVoted ? "編輯" : "報名";
       btn.disabled = isPast;
-      btn.addEventListener("click", () => openSheet(dt.key));
+      btn.addEventListener("click", () => openDayEntry(dt.key));
 
       card.appendChild(num); card.appendChild(badge); card.appendChild(btn);
       grid.appendChild(card);
@@ -516,30 +589,38 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     const rankEl = document.createElement("span"); rankEl.className = "rank"; rankEl.textContent = "#" + rank;
     const dl = document.createElement("span"); dl.className = "date-label"; dl.textContent = dateLabel(r.dt);
     const pl = document.createElement("span"); pl.className = "players";
-    pl.textContent = r.entries.map(([, e]) => entryLabel(e)).join("、");
+    pl.textContent = sessionEntries(r.session).map(([, e]) => entryLabel(e)).join("、");
     const ct = document.createElement("span"); ct.className = "count"; ct.textContent = `${r.count} 人`;
     headline.appendChild(rankEl); headline.appendChild(dl); headline.appendChild(pl); headline.appendChild(ct);
 
     const fields = document.createElement("div"); fields.className = "fields";
-    const day = daysData[r.dt.key] || {};
     const courseInput = document.createElement("input");
     courseInput.type = "text"; courseInput.placeholder = "球場名稱"; courseInput.maxLength = 60;
-    courseInput.value = day.course || "";
-    courseInput.addEventListener("change", () => saveSession(r.dt.key, { course: courseInput.value.trim() }));
+    courseInput.value = r.session.course || "";
+    courseInput.addEventListener("change", () => saveSessionInfo(r.dt.key, r.session.id, { course: courseInput.value.trim() }));
     const timeInput = document.createElement("input");
     timeInput.type = "text"; timeInput.placeholder = "開球時間"; timeInput.maxLength = 20;
-    timeInput.value = day.teeTime || "";
-    timeInput.addEventListener("change", () => saveSession(r.dt.key, { teeTime: timeInput.value.trim() }));
+    timeInput.value = r.session.teeTime || "";
+    timeInput.addEventListener("change", () => saveSessionInfo(r.dt.key, r.session.id, { teeTime: timeInput.value.trim() }));
     fields.appendChild(courseInput); fields.appendChild(timeInput);
 
     row.appendChild(headline); row.appendChild(fields);
     return row;
   }
 
+  function allSessionRows() {
+    const rows = [];
+    monthDates.forEach((dt) => {
+      daySessions(dt.key).forEach((session) => {
+        const count = sessionCount(session);
+        if (count > 0) rows.push({ dt, session, count });
+      });
+    });
+    return rows;
+  }
+
   function renderConfirmed() {
-    const rows = monthDates
-      .map((dt) => ({ dt, count: dayCount(dt.key), entries: dayEntries(dt.key) }))
-      .filter((r) => r.count > 0);
+    const rows = allSessionRows();
 
     const upcoming = rows.filter((r) => !isPastDate(r.dt.key)).sort((a, b) => a.dt.day - b.dt.day);
     const past = rows.filter((r) => isPastDate(r.dt.key)).sort((a, b) => b.dt.day - a.dt.day);
@@ -576,16 +657,12 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   }
 
   function buildCopyText() {
-    const rows = monthDates
-      .map((dt) => ({ dt, count: dayCount(dt.key), entries: dayEntries(dt.key) }))
-      .filter((r) => r.count > 0)
-      .sort((a, b) => a.dt.day - b.dt.day);
+    const rows = allSessionRows().sort((a, b) => a.dt.day - b.dt.day);
 
     const lines = [`『${target.month + 1}月打球開團囉⛳️』`];
     rows.forEach((r) => {
-      const day = daysData[r.dt.key] || {};
-      const names = r.entries.map(([, e]) => entryLabel(e)).join(", ");
-      const prefix = [day.course, day.teeTime].filter(Boolean).join(" ");
+      const names = sessionEntries(r.session).map(([, e]) => entryLabel(e)).join(", ");
+      const prefix = [r.session.course, r.session.teeTime].filter(Boolean).join(" ");
       const body = [prefix, names].filter(Boolean).join(" ");
       lines.push(`『${target.month + 1}/${r.dt.day}』：${body} — ${r.count}`);
     });
@@ -610,6 +687,80 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     setTimeout(() => { copyBtn.textContent = original; copyBtn.classList.remove("copied"); }, 1500);
   });
 
+  // ---- day entry: session picker (when a day has 2+ outings) ----
+  const pickerBackdrop = document.getElementById("picker-backdrop");
+  const sessionListEl = document.getElementById("session-list");
+  let pickerDateKey = null;
+
+  function sessionLabel(session) {
+    return [session.course, session.teeTime].filter(Boolean).join(" · ") || "（尚未填球場/時間）";
+  }
+
+  // A day with no sessions yet skips straight to creating one; exactly one
+  // session skips straight to its sign-up sheet; two or more shows a picker.
+  async function openDayEntry(dateKey) {
+    const sessions = daySessions(dateKey);
+    if (sessions.length === 0) {
+      const session = await createSession(dateKey);
+      if (session) openSheet(dateKey, session.id);
+      return;
+    }
+    if (sessions.length === 1) {
+      openSheet(dateKey, sessions[0].id);
+      return;
+    }
+    openPicker(dateKey);
+  }
+
+  function openPicker(dateKey) {
+    pickerDateKey = dateKey;
+    const dt = monthDates.find((d) => d.key === dateKey);
+    document.getElementById("picker-title").textContent = `${target.month + 1}/${dt.day} 選擇球局`;
+    sessionListEl.innerHTML = "";
+    daySessions(dateKey).forEach((session) => {
+      const item = document.createElement("div"); item.className = "session-item";
+      const info = document.createElement("div"); info.className = "s-info";
+      const title = document.createElement("span"); title.className = "s-title"; title.textContent = sessionLabel(session);
+      const sub = document.createElement("span"); sub.className = "s-sub"; sub.textContent = `${sessionCount(session)} 人`;
+      info.appendChild(title); info.appendChild(sub);
+      const btn = document.createElement("button"); btn.type = "button";
+      btn.textContent = myCountInSession(session) > 0 ? "編輯" : "報名";
+      btn.addEventListener("click", () => { closePicker(); openSheet(dateKey, session.id); });
+      item.appendChild(info); item.appendChild(btn);
+      sessionListEl.appendChild(item);
+    });
+    pickerBackdrop.classList.add("open");
+  }
+  function closePicker() { pickerBackdrop.classList.remove("open"); pickerDateKey = null; }
+
+  document.getElementById("picker-cancel").addEventListener("click", closePicker);
+  document.getElementById("picker-new").addEventListener("click", async () => {
+    const dateKey = pickerDateKey;
+    closePicker();
+    if (!dateKey) return;
+    const session = await createSession(dateKey);
+    if (session) openSheet(dateKey, session.id);
+  });
+  pickerBackdrop.addEventListener("click", (e) => { if (e.target === pickerBackdrop) closePicker(); });
+
+  async function createSession(dateKey) {
+    const idToken = freshIdToken();
+    if (!idToken) { handleExpiredSession(); return null; }
+    try {
+      const res = await fetch("/api/session/create", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, groupId, month: monthKey, date: dateKey }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        daysData = data.days; render();
+        return (daysData[dateKey].sessions || []).find((s) => s.id === data.sessionId);
+      }
+      if (res.status === 401) handleExpiredSession();
+    } catch (e) { connText.textContent = "網路異常，請重試"; }
+    return null;
+  }
+
   // ---- headcount sheet ----
   const backdrop = document.getElementById("sheet-backdrop");
   const sheetTitle = document.getElementById("sheet-title");
@@ -617,6 +768,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   const stepCount = document.getElementById("step-count");
   const guestNamesEl = document.getElementById("guest-names");
   let sheetDateKey = null;
+  let sheetSessionId = null;
   let sheetCount = 1;
   let sheetGuestNames = [];
 
@@ -633,10 +785,11 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     }
   }
 
-  function openSheet(dateKey) {
+  function openSheet(dateKey, sessionId) {
     sheetDateKey = dateKey;
-    const entries = daysData[dateKey] && daysData[dateKey].entries;
-    const mine = entries && entries["line:" + myUserId];
+    sheetSessionId = sessionId;
+    const session = daySessions(dateKey).find((s) => s.id === sessionId);
+    const mine = session && session.entries && session.entries["line:" + myUserId];
     sheetCount = Math.max(1, (mine && mine.count) || 1);
     sheetGuestNames = mine && mine.guestNames ? mine.guestNames.slice() : [];
     stepCount.textContent = sheetCount;
@@ -649,6 +802,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   function closeSheet() {
     backdrop.classList.remove("open");
     sheetDateKey = null;
+    sheetSessionId = null;
     if (pendingRender) { pendingRender = false; render(); }
   }
 
@@ -659,11 +813,12 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     sheetCount = Math.min(20, sheetCount + 1); stepCount.textContent = sheetCount; renderGuestInputs();
   });
   document.getElementById("sheet-cancel").addEventListener("click", () => {
-    if (sheetDateKey && myEntryCount(sheetDateKey) > 0) submitVote(sheetDateKey, 0, []);
+    const session = sheetDateKey && daySessions(sheetDateKey).find((s) => s.id === sheetSessionId);
+    if (session && myCountInSession(session) > 0) submitVote(sheetDateKey, sheetSessionId, 0, []);
     closeSheet();
   });
   document.getElementById("sheet-save").addEventListener("click", () => {
-    if (sheetDateKey) submitVote(sheetDateKey, sheetCount, sheetGuestNames.slice(0, sheetCount - 1));
+    if (sheetDateKey && sheetSessionId) submitVote(sheetDateKey, sheetSessionId, sheetCount, sheetGuestNames.slice(0, sheetCount - 1));
     closeSheet();
   });
   backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeSheet(); });
@@ -713,13 +868,13 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     }, 1200);
   }
 
-  async function submitVote(dateKey, count, guestNames) {
+  async function submitVote(dateKey, sessionId, count, guestNames) {
     const idToken = freshIdToken();
     if (!idToken) return handleExpiredSession();
     try {
       const res = await fetch("/api/vote", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, groupId, month: monthKey, date: dateKey, count, guestNames: guestNames || [] }),
+        body: JSON.stringify({ idToken, groupId, month: monthKey, date: dateKey, sessionId, count, guestNames: guestNames || [] }),
       });
       const data = await res.json();
       if (res.ok) { daysData = data.days; render(); }
@@ -728,13 +883,13 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     } catch (e) { connText.textContent = "網路異常，請重試"; }
   }
 
-  async function saveSession(dateKey, patch) {
+  async function saveSessionInfo(dateKey, sessionId, patch) {
     const idToken = freshIdToken();
     if (!idToken) return handleExpiredSession();
     try {
       const res = await fetch("/api/session", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, groupId, month: monthKey, date: dateKey, ...patch }),
+        body: JSON.stringify({ idToken, groupId, month: monthKey, date: dateKey, sessionId, ...patch }),
       });
       const data = await res.json();
       if (res.ok) { daysData = data.days; render(); }

@@ -5,15 +5,23 @@
 //     "2026-10": {
 //       days: {
 //         "2026-10-03": {
-//           course: "長庚",
-//           teeTime: "5:50",
-//           entries: {
-//             "line:<lineUserId>": { displayName, count, updatedAt },
-//             "name:<slug>": { displayName, count, updatedAt }   // legacy text sign-ups with no LINE identity
-//           }
+//           sessions: [
+//             {
+//               id: "s1",
+//               course: "長庚",
+//               teeTime: "5:50",
+//               entries: {
+//                 "line:<lineUserId>": { displayName, count, guestNames, updatedAt },
+//                 "name:<slug>": { displayName, count, updatedAt }   // legacy text sign-ups with no LINE identity
+//               }
+//             }
+//             // a day can hold more than one session — e.g. a morning and an
+//             // afternoon outing on the same date
+//           ]
 //         }
 //       }
-//     }
+//     },
+//     board: [ ... ]
 //   }
 // }
 
@@ -62,18 +70,59 @@ function lineKey(lineUserId) {
   return "line:" + lineUserId;
 }
 
+function newSessionId() {
+  return `s-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+// A day used to be a single { course, teeTime, entries } object — one outing
+// per date. Upgrade any day still in that shape to { sessions: [...] } in
+// place so old data keeps working without a separate migration step.
+function migrateDayShape(day) {
+  if (day && !Array.isArray(day.sessions)) {
+    const legacy = {
+      id: "s1",
+      course: day.course || "",
+      teeTime: day.teeTime || "",
+      entries: day.entries || {},
+    };
+    if (day.max !== undefined) legacy.max = day.max;
+    day.sessions = Object.keys(legacy.entries).length || legacy.course || legacy.teeTime ? [legacy] : [];
+    delete day.course;
+    delete day.teeTime;
+    delete day.entries;
+    delete day.max;
+  }
+  return day;
+}
+
+function migrateMonthDays(month) {
+  Object.keys(month.days || {}).forEach((k) => migrateDayShape(month.days[k]));
+  return month;
+}
+
 function getMonth(groupId, mKey = monthKey()) {
   const data = load();
-  return (data[groupId] && data[groupId][mKey]) || { days: {} };
+  const month = (data[groupId] && data[groupId][mKey]) || { days: {} };
+  return migrateMonthDays(month);
 }
 
 function ensureDay(month, date) {
-  if (!month.days[date]) month.days[date] = { course: "", teeTime: "", entries: {} };
-  return month.days[date];
+  if (!month.days[date]) month.days[date] = { sessions: [] };
+  return migrateDayShape(month.days[date]);
+}
+
+function ensureSession(day, sessionId) {
+  let session = day.sessions.find((s) => s.id === sessionId);
+  if (!session) {
+    session = { id: sessionId || newSessionId(), course: "", teeTime: "", entries: {} };
+    day.sessions.push(session);
+  }
+  return session;
 }
 
 // Legacy text-command entry point: `entries` is the array parser.parseMessage() returns.
 // `dateToKey(entry.date)` converts a parsed "9/3" string into the canonical "YYYY-MM-DD" key.
+// Text commands always target the day's first (or only) session — they predate multi-session days.
 function applyEntries(groupId, entries, mKey, dateToKey) {
   const data = load();
   if (!data[groupId]) data[groupId] = {};
@@ -83,55 +132,76 @@ function applyEntries(groupId, entries, mKey, dateToKey) {
   for (const entry of entries) {
     const dateKey = dateToKey(entry.date);
     const day = ensureDay(month, dateKey);
+    const session = day.sessions[0] || ensureSession(day, "s1");
 
-    if (entry.note) day.course = entry.note;
-    if (entry.max !== null && entry.max !== undefined) day.max = entry.max;
+    if (entry.note) session.course = entry.note;
+    if (entry.max !== null && entry.max !== undefined) session.max = entry.max;
 
     for (const name of entry.adds) {
       const key = nameSlug(name);
-      day.entries[key] = { displayName: name, count: 1, updatedAt: Date.now() };
+      session.entries[key] = { displayName: name, count: 1, updatedAt: Date.now() };
     }
     for (const name of entry.removes) {
-      delete day.entries[nameSlug(name)];
+      delete session.entries[nameSlug(name)];
     }
   }
 
   save(data);
-  return month;
+  return migrateMonthDays(month);
 }
 
-// Web sign-up entry point: set (or clear, when count <= 0) one person's headcount for a date.
-// `guestNames` optionally names the extra people this person is signing up alongside themselves.
-function setVote(groupId, mKey, dateKey, { lineUserId, displayName, count, guestNames }) {
+// Create a new, empty session ("球局") on a date — used when a day already
+// has one outing and someone wants to open a second one (e.g. morning +
+// afternoon tee times).
+function addSession(groupId, mKey, dateKey, { course, teeTime } = {}) {
   const data = load();
   if (!data[groupId]) data[groupId] = {};
   if (!data[groupId][mKey]) data[groupId][mKey] = { days: {} };
   const month = data[groupId][mKey];
   const day = ensureDay(month, dateKey);
+
+  const session = { id: newSessionId(), course: course || "", teeTime: teeTime || "", entries: {} };
+  day.sessions.push(session);
+
+  save(data);
+  return { month: migrateMonthDays(month), sessionId: session.id };
+}
+
+// Web sign-up entry point: set (or clear, when count <= 0) one person's headcount
+// on a specific session. `guestNames` optionally names the extra people this
+// person is signing up alongside themselves.
+function setVote(groupId, mKey, dateKey, sessionId, { lineUserId, displayName, count, guestNames }) {
+  const data = load();
+  if (!data[groupId]) data[groupId] = {};
+  if (!data[groupId][mKey]) data[groupId][mKey] = { days: {} };
+  const month = data[groupId][mKey];
+  const day = ensureDay(month, dateKey);
+  const session = ensureSession(day, sessionId);
   const key = lineKey(lineUserId);
 
   if (!count || count <= 0) {
-    delete day.entries[key];
+    delete session.entries[key];
   } else {
-    day.entries[key] = { displayName, count, guestNames: guestNames || [], updatedAt: Date.now() };
+    session.entries[key] = { displayName, count, guestNames: guestNames || [], updatedAt: Date.now() };
   }
 
   save(data);
-  return month;
+  return migrateMonthDays(month);
 }
 
-function setSession(groupId, mKey, dateKey, { course, teeTime }) {
+function setSession(groupId, mKey, dateKey, sessionId, { course, teeTime }) {
   const data = load();
   if (!data[groupId]) data[groupId] = {};
   if (!data[groupId][mKey]) data[groupId][mKey] = { days: {} };
   const month = data[groupId][mKey];
   const day = ensureDay(month, dateKey);
+  const session = ensureSession(day, sessionId);
 
-  if (course !== undefined) day.course = course;
-  if (teeTime !== undefined) day.teeTime = teeTime;
+  if (course !== undefined) session.course = course;
+  if (teeTime !== undefined) session.teeTime = teeTime;
 
   save(data);
-  return month;
+  return migrateMonthDays(month);
 }
 
 // ---- message board ---------------------------------------------------------
@@ -195,6 +265,7 @@ module.exports = {
   canonicalDate,
   getMonth,
   applyEntries,
+  addSession,
   setVote,
   setSession,
   nameSlug,

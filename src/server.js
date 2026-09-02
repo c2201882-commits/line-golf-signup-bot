@@ -3,7 +3,7 @@ const express = require("express");
 const line = require("@line/bot-sdk");
 const { parseMessage } = require("./parser");
 const {
-  applyEntries, getMonth, monthKey, canonicalDate, setVote, setSession, load, save,
+  applyEntries, getMonth, monthKey, canonicalDate, addSession, setVote, setSession, load, save,
   getBoard, addBoardMessage, deleteBoardMessage, setBoardPin,
 } = require("./store");
 const { formatSummary, HELP_TEXT, buildMenuQuickReply } = require("./summary");
@@ -61,9 +61,29 @@ app.get("/api/state", async (req, res) => {
   res.json({ days: monthData.days || {} });
 });
 
-app.post("/api/vote", async (req, res) => {
-  const { idToken, groupId, month, date, count, guestNames } = req.body || {};
+app.post("/api/session/create", async (req, res) => {
+  const { idToken, groupId, month, date, course, teeTime } = req.body || {};
   if (!groupId || !month || !date) return res.status(400).json({ error: "groupId, month, date are required" });
+
+  try {
+    await verifyIdToken(idToken); // anyone may open a new session, but must be a real LINE user
+  } catch (err) {
+    console.error("verifyIdToken failed:", err.message || err);
+    return res.status(401).json({ error: "invalid LINE identity", detail: String(err.message || err) });
+  }
+
+  const { month: monthData, sessionId } = addSession(groupId, month, date, {
+    course: course || "",
+    teeTime: teeTime || "",
+  });
+  res.json({ days: monthData.days, sessionId });
+});
+
+app.post("/api/vote", async (req, res) => {
+  const { idToken, groupId, month, date, sessionId, count, guestNames } = req.body || {};
+  if (!groupId || !month || !date || !sessionId) {
+    return res.status(400).json({ error: "groupId, month, date, sessionId are required" });
+  }
 
   let identity;
   try {
@@ -77,7 +97,7 @@ app.post("/api/vote", async (req, res) => {
   const parsedGuestNames = Array.isArray(guestNames)
     ? guestNames.slice(0, 19).map((n) => String(n || "").trim().slice(0, 30))
     : [];
-  const monthData = setVote(groupId, month, date, {
+  const monthData = setVote(groupId, month, date, sessionId, {
     lineUserId: identity.lineUserId,
     displayName: identity.displayName,
     count: parsedCount,
@@ -87,8 +107,10 @@ app.post("/api/vote", async (req, res) => {
 });
 
 app.post("/api/session", async (req, res) => {
-  const { idToken, groupId, month, date, course, teeTime } = req.body || {};
-  if (!groupId || !month || !date) return res.status(400).json({ error: "groupId, month, date are required" });
+  const { idToken, groupId, month, date, sessionId, course, teeTime } = req.body || {};
+  if (!groupId || !month || !date || !sessionId) {
+    return res.status(400).json({ error: "groupId, month, date, sessionId are required" });
+  }
 
   try {
     await verifyIdToken(idToken); // anyone in the group may edit course/tee-time, but must be a real LINE user
@@ -97,7 +119,7 @@ app.post("/api/session", async (req, res) => {
     return res.status(401).json({ error: "invalid LINE identity", detail: String(err.message || err) });
   }
 
-  const monthData = setSession(groupId, month, date, { course, teeTime });
+  const monthData = setSession(groupId, month, date, sessionId, { course, teeTime });
   res.json({ days: monthData.days });
 });
 
