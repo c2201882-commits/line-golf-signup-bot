@@ -5,6 +5,7 @@ const { parseMessage } = require("./parser");
 const {
   applyEntries, getMonth, monthKey, canonicalDate, addSession, setVote, setSession, load, save,
   getBoard, addBoardMessage, deleteBoardMessage, setBoardPin, getActivity,
+  getStats, getProfiles, purchaseItem, equipItem, SHOP_CATALOG,
 } = require("./store");
 const { formatSummary, HELP_TEXT, buildMenuQuickReply } = require("./summary");
 const { verifyIdToken } = require("./lineAuth");
@@ -193,6 +194,56 @@ app.post("/api/board/pin", async (req, res) => {
   const result = setBoardPin(groupId, messageId, identity.lineUserId, !!pinned);
   if (!result.ok) return res.status(403).json({ error: "only the author can pin this message" });
   res.json({ messages: result.board });
+});
+
+// ---- Stats: honor board + friendship pairs --------------------------------
+
+app.get("/api/stats", (req, res) => {
+  const { groupId } = req.query;
+  if (!groupId) return res.status(400).json({ error: "groupId is required" });
+  res.json(getStats(groupId));
+});
+
+// ---- Shop: cosmetic frames/titles bought with points earned from sign-ups --
+
+app.get("/api/profiles", (req, res) => {
+  const { groupId } = req.query;
+  if (!groupId) return res.status(400).json({ error: "groupId is required" });
+  res.json({ profiles: getProfiles(groupId), catalog: SHOP_CATALOG });
+});
+
+app.post("/api/shop/purchase", async (req, res) => {
+  const { idToken, groupId, itemType, itemId } = req.body || {};
+  if (!groupId || !itemType || !itemId) return res.status(400).json({ error: "groupId, itemType, itemId are required" });
+
+  let identity;
+  try {
+    identity = await verifyIdToken(idToken);
+  } catch (err) {
+    console.error("verifyIdToken failed:", err.message || err);
+    return res.status(401).json({ error: "invalid LINE identity", detail: String(err.message || err) });
+  }
+
+  const result = purchaseItem(groupId, identity.lineUserId, identity.displayName, itemType, itemId);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  res.json({ profile: result.profile });
+});
+
+app.post("/api/shop/equip", async (req, res) => {
+  const { idToken, groupId, itemType, itemId } = req.body || {};
+  if (!groupId || !itemType || !itemId) return res.status(400).json({ error: "groupId, itemType, itemId are required" });
+
+  let identity;
+  try {
+    identity = await verifyIdToken(idToken);
+  } catch (err) {
+    console.error("verifyIdToken failed:", err.message || err);
+    return res.status(401).json({ error: "invalid LINE identity", detail: String(err.message || err) });
+  }
+
+  const result = equipItem(groupId, identity.lineUserId, identity.displayName, itemType, itemId);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  res.json({ profile: result.profile });
 });
 
 // ---- Admin backup/restore --------------------------------------------------

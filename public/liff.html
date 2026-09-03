@@ -29,6 +29,12 @@
   --danger: #b5574a;
   --danger-soft: #f3e4e0;
   --shadow: rgba(50, 40, 20, 0.06);
+  /* tier palette for 榮譽榜/好友度/裝扮商店 — grey/green/blue/purple/gold rarity tiers */
+  --tier-1: #8a8275; --tier-1-soft: #f1efe9;
+  --tier-2: #7c8c6a; --tier-2-soft: #e7ebe0;
+  --tier-3: #6c8598; --tier-3-soft: #e7edf1;
+  --tier-4: #8a7a9e; --tier-4-soft: #ece7f0;
+  --tier-5: #b98f3f; --tier-5-soft: #f5ecd8;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -148,6 +154,63 @@ section.summary .tag {
 section.summary .tag.info { background: var(--status-full-soft); color: var(--status-full); }
 section.summary .tag.danger { background: var(--danger-soft); color: var(--danger); }
 hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+/* honor board / friendship / shop — shared bits */
+.hero-card {
+  display: flex; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 18px 20px; margin-bottom: 22px; box-shadow: 0 1px 2px var(--shadow);
+}
+.avatar-frame {
+  width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  border: 4px solid var(--tier-1); background: var(--surface-2); box-sizing: content-box;
+}
+.avatar-frame img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.avatar-frame .initials { font-family: "Zen Maru Gothic", sans-serif; font-weight: 700; font-size: 15px; color: var(--text); }
+.hero-card .info { flex: 1; min-width: 0; }
+.hero-card .label { font-size: 11.5px; color: var(--muted); }
+.hero-card .name { font-size: 15px; font-weight: 600; margin: 2px 0 4px; }
+.hero-card .hero-sub { font-size: 12px; color: var(--muted); }
+.tier-pill { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 999px; flex-shrink: 0; white-space: nowrap; }
+
+.rank-list { display: flex; flex-direction: column; gap: 8px; }
+.rank-row {
+  display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 10px;
+  background: var(--surface-2); border: 1px solid var(--border);
+}
+.rank-row .rank { width: 22px; text-align: center; font-family: "Zen Maru Gothic", sans-serif; font-weight: 700; font-size: 13px; color: var(--muted); flex-shrink: 0; }
+.rank-row.top1 .rank, .rank-row.top2 .rank { color: var(--tier-5); }
+.rank-row .badge-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.rank-row .row-name { flex: 1; font-size: 13.5px; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
+.rank-row .row-name .link-sep { color: var(--muted); margin: 0 3px; font-size: 11px; }
+.rank-row .count { font-family: "Zen Maru Gothic", sans-serif; font-weight: 600; font-size: 13px; color: var(--text); flex-shrink: 0; }
+
+/* shop */
+.points-pill {
+  display: flex; align-items: center; gap: 6px; font-family: "Zen Maru Gothic", sans-serif; font-weight: 700;
+  font-size: 14px; color: var(--tier-5); background: var(--tier-5-soft); border-radius: 999px; padding: 6px 13px;
+  flex-shrink: 0;
+}
+.shop-section { margin-bottom: 22px; }
+.shop-section h3 { font-family: "Zen Maru Gothic", sans-serif; font-size: 14px; font-weight: 500; margin: 0 0 10px; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.item-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center;
+}
+.item-card.locked { opacity: 0.6; }
+.item-card .swatch { width: 40px; height: 40px; border-radius: 50%; border: 4px solid; background: var(--surface-2); }
+.item-card .swatch.title-swatch {
+  width: auto; height: auto; border: none; border-radius: 999px; padding: 5px 11px; font-size: 11px; font-weight: 700;
+}
+.item-card .item-name { font-size: 12px; font-weight: 600; }
+.item-card .item-price { font-size: 10.5px; color: var(--muted); }
+.item-card button {
+  width: 100%; font-family: inherit; font-weight: 600; font-size: 11.5px; padding: 6px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--surface-2); color: var(--text); cursor: pointer;
+}
+.item-card button:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
+.item-card button.equipped { background: var(--accent); border-color: var(--accent); color: #fff; cursor: default; }
+.item-card button:disabled { opacity: 0.6; cursor: not-allowed; }
 .copy-btn {
   flex-shrink: 0; font-family: inherit; font-weight: 500; font-size: 12px;
   padding: 7px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2);
@@ -364,6 +427,9 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     <button type="button" class="tab-btn" id="tab-my">我的報名</button>
     <button type="button" class="tab-btn" id="tab-board">留言板</button>
     <button type="button" class="tab-btn" id="tab-activity">最新動態</button>
+    <button type="button" class="tab-btn" id="tab-honor">榮譽榜</button>
+    <button type="button" class="tab-btn" id="tab-friend">好友度</button>
+    <button type="button" class="tab-btn" id="tab-shop">裝扮商店</button>
     <button type="button" class="tab-btn" id="tab-guide">使用說明</button>
   </div>
 
@@ -414,6 +480,56 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     <div class="activity-list" id="activity-list">
       <p class="empty-note">還沒有任何動態</p>
     </div>
+  </div>
+
+  <div class="view" id="view-honor">
+    <section class="summary">
+      <h2>榮譽榜</h2>
+      <p class="sub">依照累積報名次數排名，等級顏色越稀有代表報名越穩定</p>
+      <div id="honor-me"></div>
+      <div class="rank-list" id="honor-list">
+        <p class="empty-note">目前還沒有任何報名紀錄</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="view" id="view-friend">
+    <section class="summary">
+      <h2>好友度配對</h2>
+      <p class="sub">統計哪些人最常一起報名同一團，次數越多好友度等級越高</p>
+      <div id="friend-me"></div>
+      <div class="rank-list" id="friend-list">
+        <p class="empty-note">目前還沒有兩人以上同團的紀錄</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="view" id="view-shop">
+    <section class="summary">
+      <div class="summary-head">
+        <div>
+          <h2>裝扮商店</h2>
+          <p class="sub">每次報名可以賺點數，拿來解鎖頭像邊框和專屬稱號</p>
+        </div>
+        <span class="points-pill" id="shop-points">⛳ 0 點</span>
+      </div>
+      <div class="hero-card">
+        <div class="avatar-frame" id="shop-avatar-frame"><span class="initials" id="shop-avatar-initials">?</span></div>
+        <div class="info">
+          <div class="label">目前裝扮</div>
+          <div class="name" id="shop-name">—</div>
+          <span class="tier-pill" id="shop-title-pill"></span>
+        </div>
+      </div>
+      <div class="shop-section">
+        <h3>頭像邊框</h3>
+        <div class="shop-grid" id="shop-frames"></div>
+      </div>
+      <div class="shop-section">
+        <h3>專屬稱號</h3>
+        <div class="shop-grid" id="shop-titles"></div>
+      </div>
+    </section>
   </div>
 
   <div class="view" id="view-guide">
@@ -575,6 +691,9 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     my: { btn: document.getElementById("tab-my"), view: document.getElementById("view-my") },
     board: { btn: document.getElementById("tab-board"), view: document.getElementById("view-board") },
     activity: { btn: document.getElementById("tab-activity"), view: document.getElementById("view-activity") },
+    honor: { btn: document.getElementById("tab-honor"), view: document.getElementById("view-honor") },
+    friend: { btn: document.getElementById("tab-friend"), view: document.getElementById("view-friend") },
+    shop: { btn: document.getElementById("tab-shop"), view: document.getElementById("view-shop") },
     guide: { btn: document.getElementById("tab-guide"), view: document.getElementById("view-guide") },
   };
   Object.keys(tabs).forEach((name) => tabs[name].btn.addEventListener("click", () => switchTab(name)));
@@ -585,6 +704,8 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     });
     if (active === "board") loadBoard();
     if (active === "activity") loadActivity();
+    if (active === "honor" || active === "friend") loadStats();
+    if (active === "shop") loadShop();
   }
 
   // ---- account menu ----
@@ -1064,6 +1185,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeSheet(); });
 
   let myUserId = null;
+  let meDisplayName = null;
   let liffReady = false;
 
   // liff.getIDToken() can go stale/null after the token's ~1hr lifetime, especially
@@ -1273,6 +1395,254 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     } catch (e) {}
   }
 
+  // ---- honor board + friendship pairs ----
+  // Tiers borrow the grey/green/blue/purple/gold rarity convention from
+  // mobile-game gear, desaturated to match this app's neutral palette.
+  const TIER_THRESHOLDS = [
+    { min: 15, id: 5, label: "金・傳說" },
+    { min: 10, id: 4, label: "紫・元老" },
+    { min: 6, id: 3, label: "藍・資深" },
+    { min: 3, id: 2, label: "綠・常客" },
+    { min: 1, id: 1, label: "灰・入門" },
+  ];
+  const PAIR_TIER_LABELS = { 5: "金・鐵搭檔", 4: "紫・熟識", 3: "藍・老搭檔", 2: "綠・球友", 1: "灰・初次見面" };
+
+  function tierForCount(count) {
+    return TIER_THRESHOLDS.find((t) => count >= t.min) || { id: 1, label: "灰・入門" };
+  }
+  function nextTierGap(count) {
+    const next = TIER_THRESHOLDS.slice().reverse().find((t) => t.min > count);
+    return next ? next.min - count : null;
+  }
+
+  // Built with DOM nodes (never innerHTML) since names come from LINE
+  // profiles — untrusted text.
+  function buildHeroCard({ tierId, initials, label, name, subText, pillText }) {
+    const card = document.createElement("div"); card.className = "hero-card";
+    const frame = document.createElement("div"); frame.className = "avatar-frame";
+    frame.style.borderColor = `var(--tier-${tierId})`;
+    const initEl = document.createElement("span"); initEl.className = "initials"; initEl.textContent = initials;
+    frame.appendChild(initEl);
+
+    const info = document.createElement("div"); info.className = "info";
+    const labelEl = document.createElement("div"); labelEl.className = "label"; labelEl.textContent = label;
+    const nameEl = document.createElement("div"); nameEl.className = "name"; nameEl.textContent = name;
+    const subEl = document.createElement("div"); subEl.className = "hero-sub"; subEl.textContent = subText;
+    info.appendChild(labelEl); info.appendChild(nameEl); info.appendChild(subEl);
+
+    const pill = document.createElement("span"); pill.className = "tier-pill";
+    pill.style.background = `var(--tier-${tierId}-soft)`; pill.style.color = `var(--tier-${tierId})`;
+    pill.textContent = pillText;
+
+    card.appendChild(frame); card.appendChild(info); card.appendChild(pill);
+    return card;
+  }
+
+  function buildRankRow(rankNum, tierId, name, tierLabel, countText) {
+    const row = document.createElement("div");
+    row.className = "rank-row" + (rankNum === 1 ? " top1" : rankNum === 2 ? " top2" : "");
+    const rank = document.createElement("div"); rank.className = "rank"; rank.textContent = rankNum;
+    const dot = document.createElement("span"); dot.className = "badge-dot"; dot.style.background = `var(--tier-${tierId})`;
+    const nameEl = document.createElement("div"); nameEl.className = "row-name"; nameEl.textContent = name;
+    const pill = document.createElement("span"); pill.className = "tier-pill";
+    pill.style.background = `var(--tier-${tierId}-soft)`; pill.style.color = `var(--tier-${tierId})`;
+    pill.textContent = tierLabel;
+    const count = document.createElement("div"); count.className = "count"; count.textContent = countText;
+    row.appendChild(rank); row.appendChild(dot); row.appendChild(nameEl); row.appendChild(pill); row.appendChild(count);
+    return row;
+  }
+
+  let statsData = null;
+
+  async function loadStats() {
+    try {
+      const res = await fetch(`/api/stats?groupId=${encodeURIComponent(groupId)}`);
+      statsData = await res.json();
+    } catch (e) {
+      statsData = null;
+    }
+    renderHonor();
+    renderFriend();
+  }
+
+  function renderHonor() {
+    const listEl = document.getElementById("honor-list");
+    const meEl = document.getElementById("honor-me");
+    listEl.innerHTML = ""; meEl.innerHTML = "";
+    const board = (statsData && statsData.leaderboard) || [];
+    if (board.length === 0) {
+      listEl.innerHTML = '<p class="empty-note">目前還沒有任何報名紀錄</p>';
+      return;
+    }
+
+    const myIndex = board.findIndex((b) => b.lineUserId === myUserId);
+    if (myIndex >= 0) {
+      const mine = board[myIndex];
+      const tier = tierForCount(mine.count);
+      const gap = nextTierGap(mine.count);
+      meEl.appendChild(buildHeroCard({
+        tierId: tier.id,
+        initials: (mine.displayName || "?").slice(0, 2),
+        label: `你的排名 #${myIndex + 1}`,
+        name: mine.displayName,
+        subText: `累積報名 ${mine.count} 次` + (gap ? ` · 距離下一等級還差 ${gap} 次` : ""),
+        pillText: tier.label,
+      }));
+    }
+
+    board.forEach((b, i) => {
+      const tier = tierForCount(b.count);
+      listEl.appendChild(buildRankRow(i + 1, tier.id, b.displayName, tier.label, `${b.count} 次`));
+    });
+  }
+
+  function renderFriend() {
+    const listEl = document.getElementById("friend-list");
+    const meEl = document.getElementById("friend-me");
+    listEl.innerHTML = ""; meEl.innerHTML = "";
+    const pairs = (statsData && statsData.pairs) || [];
+    if (pairs.length === 0) {
+      listEl.innerHTML = '<p class="empty-note">目前還沒有兩人以上同團的紀錄</p>';
+      return;
+    }
+
+    const myPairs = pairs.filter((p) => p.aId === myUserId || p.bId === myUserId);
+    if (myPairs.length > 0) {
+      const best = myPairs[0];
+      const partnerName = best.aId === myUserId ? best.bName : best.aName;
+      const tierId = tierForCount(best.count).id;
+      meEl.appendChild(buildHeroCard({
+        tierId,
+        initials: (partnerName || "?").slice(0, 2),
+        label: "你最麻吉的球友",
+        name: partnerName,
+        subText: `一起報名過 ${best.count} 次`,
+        pillText: PAIR_TIER_LABELS[tierId],
+      }));
+    }
+
+    pairs.forEach((p, i) => {
+      const tierId = tierForCount(p.count).id;
+      const row = buildRankRow(i + 1, tierId, "", PAIR_TIER_LABELS[tierId], `${p.count} 次`);
+      const nameEl = row.querySelector(".row-name");
+      nameEl.textContent = p.aName;
+      const sep = document.createElement("span"); sep.className = "link-sep"; sep.textContent = "⛳";
+      nameEl.appendChild(sep);
+      nameEl.appendChild(document.createTextNode(p.bName));
+      listEl.appendChild(row);
+    });
+  }
+
+  // ---- shop ----
+  let shopData = null;
+
+  async function loadShop() {
+    try {
+      const res = await fetch(`/api/profiles?groupId=${encodeURIComponent(groupId)}`);
+      shopData = await res.json();
+    } catch (e) {
+      shopData = null;
+    }
+    renderShop();
+  }
+
+  function myProfile() {
+    const fallback = { spentPoints: 0, unlocked: { frames: ["grey"], titles: ["newbie"] }, equipped: { frame: "grey", title: "newbie" }, points: 0 };
+    if (!shopData || !myUserId) return fallback;
+    return shopData.profiles[myUserId] || fallback;
+  }
+
+  function renderShop() {
+    const catalog = (shopData && shopData.catalog) || { frames: [], titles: [] };
+    const profile = myProfile();
+
+    document.getElementById("shop-points").textContent = `⛳ ${profile.points} 點`;
+    document.getElementById("shop-name").textContent = meDisplayName || "—";
+    const frame = document.getElementById("shop-avatar-frame");
+    const frameTierId = FRAME_TIER_ID[profile.equipped.frame] || 1;
+    frame.style.borderColor = `var(--tier-${frameTierId})`;
+    document.getElementById("shop-avatar-initials").textContent = (meDisplayName || "?").slice(0, 2);
+
+    const titleItem = catalog.titles.find((t) => t.id === profile.equipped.title);
+    const titlePill = document.getElementById("shop-title-pill");
+    const titleTierId = TITLE_TIER_ID[profile.equipped.title] || 1;
+    titlePill.textContent = titleItem ? titleItem.label : "";
+    titlePill.style.background = `var(--tier-${titleTierId}-soft)`;
+    titlePill.style.color = `var(--tier-${titleTierId})`;
+
+    renderShopGrid("shop-frames", "frames", catalog.frames, profile, (id) => `var(--tier-${FRAME_TIER_ID[id] || 1})`);
+    renderShopGrid("shop-titles", "titles", catalog.titles, profile, null);
+  }
+
+  const FRAME_TIER_ID = { grey: 1, green: 2, blue: 3, purple: 4, gold: 5 };
+  const TITLE_TIER_ID = { newbie: 1, earlybird: 2, swingking: 3, legend: 5 };
+
+  function renderShopGrid(containerId, itemType, items, profile, frameColorFn) {
+    const el = document.getElementById(containerId);
+    el.innerHTML = "";
+    items.forEach((item) => {
+      const unlocked = profile.unlocked[itemType].includes(item.id);
+      const equipped = profile.equipped[itemType] === item.id;
+
+      const card = document.createElement("div"); card.className = "item-card" + (unlocked ? "" : " locked");
+      const swatch = document.createElement("div");
+      if (itemType === "frames") {
+        swatch.className = "swatch"; swatch.style.borderColor = frameColorFn(item.id);
+      } else {
+        const tierId = TITLE_TIER_ID[item.id] || 1;
+        swatch.className = "swatch title-swatch";
+        swatch.style.background = `var(--tier-${tierId}-soft)`; swatch.style.color = `var(--tier-${tierId})`;
+        swatch.textContent = item.label;
+      }
+      const name = document.createElement("div"); name.className = "item-name"; name.textContent = item.label;
+      const price = document.createElement("div"); price.className = "item-price";
+      price.textContent = unlocked ? "已擁有" : `${item.price} 點解鎖`;
+
+      const btn = document.createElement("button"); btn.type = "button";
+      if (equipped) {
+        btn.textContent = "已裝備"; btn.className = "equipped"; btn.disabled = true;
+      } else if (unlocked) {
+        btn.textContent = "裝備";
+        btn.addEventListener("click", () => equipShopItem(itemType, item.id));
+      } else {
+        btn.textContent = `🔒 解鎖 (${item.price})`;
+        btn.disabled = profile.points < item.price;
+        btn.addEventListener("click", () => purchaseShopItem(itemType, item.id));
+      }
+
+      card.appendChild(swatch); card.appendChild(name); card.appendChild(price); card.appendChild(btn);
+      el.appendChild(card);
+    });
+  }
+
+  async function purchaseShopItem(itemType, itemId) {
+    const idToken = freshIdToken();
+    if (!idToken) return handleExpiredSession();
+    try {
+      const res = await fetch("/api/shop/purchase", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, groupId, itemType, itemId }),
+      });
+      const data = await res.json();
+      if (res.ok) { await loadShop(); }
+      else if (res.status === 401) handleExpiredSession();
+    } catch (e) {}
+  }
+
+  async function equipShopItem(itemType, itemId) {
+    const idToken = freshIdToken();
+    if (!idToken) return handleExpiredSession();
+    try {
+      const res = await fetch("/api/shop/equip", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, groupId, itemType, itemId }),
+      });
+      const data = await res.json();
+      if (res.ok) { await loadShop(); }
+      else if (res.status === 401) handleExpiredSession();
+    } catch (e) {}
+  }
+
   boardPostBtn.addEventListener("click", async () => {
     const text = boardInput.value.trim();
     if (!text) return;
@@ -1364,6 +1734,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       liffReady = true;
       const profile = await liff.getProfile();
       myUserId = profile.userId;
+      meDisplayName = profile.displayName;
 
       meBox.innerHTML = "";
       const img = document.createElement("img"); img.src = profile.pictureUrl || "";

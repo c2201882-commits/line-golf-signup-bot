@@ -301,6 +301,154 @@ function setBoardPin(groupId, messageId, lineUserId, pinned) {
   return { ok: true, board };
 }
 
+// ---- stats: honor board + friendship pairs ---------------------------------
+// Derived read-only from every session across every month for this group —
+// nothing extra is stored. "count" here means "times signed up", not
+// verified attendance (we have no separate check-in step).
+
+function isMonthKey(key) {
+  return /^\d{4}-\d{1,2}$/.test(key);
+}
+
+function collectAllSessions(groupId) {
+  const data = load();
+  const groupData = data[groupId] || {};
+  const sessions = [];
+  Object.keys(groupData).forEach((key) => {
+    if (!isMonthKey(key)) return;
+    const month = groupData[key];
+    Object.keys(month.days || {}).forEach((dateKey) => {
+      const day = month.days[dateKey];
+      migrateDayShape(day);
+      (day.sessions || []).forEach((session) => sessions.push(session));
+    });
+  });
+  return sessions;
+}
+
+function getStats(groupId) {
+  const sessions = collectAllSessions(groupId);
+  const counts = {}; // lineUserId -> { displayName, count }
+  const pairCounts = {}; // "idA|idB" (idA < idB) -> { aId, bId, aName, bName, count }
+
+  sessions.forEach((session) => {
+    const participants = Object.entries(session.entries || {})
+      .filter(([key]) => key.startsWith("line:"))
+      .map(([key, e]) => ({ id: key.slice(5), displayName: e.displayName }));
+
+    participants.forEach((p) => {
+      if (!counts[p.id]) counts[p.id] = { displayName: p.displayName, count: 0 };
+      counts[p.id].count += 1;
+      counts[p.id].displayName = p.displayName;
+    });
+
+    for (let i = 0; i < participants.length; i++) {
+      for (let j = i + 1; j < participants.length; j++) {
+        const [a, b] = [participants[i], participants[j]].sort((x, y) => (x.id < y.id ? -1 : 1));
+        const key = `${a.id}|${b.id}`;
+        if (!pairCounts[key]) pairCounts[key] = { aId: a.id, bId: b.id, aName: a.displayName, bName: b.displayName, count: 0 };
+        pairCounts[key].count += 1;
+        pairCounts[key].aName = a.displayName;
+        pairCounts[key].bName = b.displayName;
+      }
+    }
+  });
+
+  const leaderboard = Object.entries(counts)
+    .map(([lineUserId, v]) => ({ lineUserId, displayName: v.displayName, count: v.count }))
+    .sort((a, b) => b.count - a.count);
+
+  const pairs = Object.values(pairCounts).sort((a, b) => b.count - a.count);
+
+  return { leaderboard, pairs };
+}
+
+// ---- shop: cosmetic frames/titles bought with points earned from sign-ups --
+// Points are never stored directly — always recomputed as
+// (join count so far) * POINTS_PER_JOIN - spentPoints, so there's nothing to
+// desync if a session later gets removed.
+
+const POINTS_PER_JOIN = 10;
+
+const SHOP_CATALOG = {
+  frames: [
+    { id: "grey", label: "灰框", price: 0 },
+    { id: "green", label: "綠框", price: 50 },
+    { id: "blue", label: "藍框", price: 100 },
+    { id: "purple", label: "紫框", price: 150 },
+    { id: "gold", label: "金框", price: 250 },
+  ],
+  titles: [
+    { id: "newbie", label: "新手上路", price: 0 },
+    { id: "earlybird", label: "早鳥常客", price: 80 },
+    { id: "swingking", label: "揮桿王", price: 120 },
+    { id: "legend", label: "球場傳說", price: 200 },
+  ],
+};
+
+function ensureProfile(data, groupId, lineUserId, displayName) {
+  if (!data[groupId]) data[groupId] = {};
+  if (!data[groupId].profiles) data[groupId].profiles = {};
+  if (!data[groupId].profiles[lineUserId]) {
+    data[groupId].profiles[lineUserId] = {
+      displayName,
+      spentPoints: 0,
+      unlocked: { frames: ["grey"], titles: ["newbie"] },
+      equipped: { frame: "grey", title: "newbie" },
+    };
+  }
+  data[groupId].profiles[lineUserId].displayName = displayName;
+  return data[groupId].profiles[lineUserId];
+}
+
+function earnedPoints(groupId, lineUserId) {
+  const { leaderboard } = getStats(groupId);
+  const mine = leaderboard.find((l) => l.lineUserId === lineUserId);
+  return (mine ? mine.count : 0) * POINTS_PER_JOIN;
+}
+
+// Public: every member's equipped look + available points, keyed by lineUserId.
+function getProfiles(groupId) {
+  const data = load();
+  const profiles = (data[groupId] && data[groupId].profiles) || {};
+  const { leaderboard } = getStats(groupId);
+  const result = {};
+  Object.keys(profiles).forEach((id) => {
+    const earned = (leaderboard.find((l) => l.lineUserId === id)?.count || 0) * POINTS_PER_JOIN;
+    result[id] = { ...profiles[id], points: earned - profiles[id].spentPoints };
+  });
+  return result;
+}
+
+function purchaseItem(groupId, lineUserId, displayName, itemType, itemId) {
+  const catalog = SHOP_CATALOG[itemType];
+  const item = catalog && catalog.find((i) => i.id === itemId);
+  if (!item) return { ok: false, error: "unknown item" };
+
+  const data = load();
+  const profile = ensureProfile(data, groupId, lineUserId, displayName);
+  if (profile.unlocked[itemType].includes(itemId)) return { ok: true, profile };
+
+  const available = earnedPoints(groupId, lineUserId) - profile.spentPoints;
+  if (available < item.price) return { ok: false, error: "not enough points" };
+
+  profile.spentPoints += item.price;
+  profile.unlocked[itemType].push(itemId);
+  save(data);
+  return { ok: true, profile };
+}
+
+function equipItem(groupId, lineUserId, displayName, itemType, itemId) {
+  const data = load();
+  const profile = ensureProfile(data, groupId, lineUserId, displayName);
+  if (!profile.unlocked[itemType] || !profile.unlocked[itemType].includes(itemId)) {
+    return { ok: false, error: "not unlocked" };
+  }
+  profile.equipped[itemType] = itemId;
+  save(data);
+  return { ok: true, profile };
+}
+
 module.exports = {
   load,
   save,
@@ -318,4 +466,9 @@ module.exports = {
   deleteBoardMessage,
   setBoardPin,
   getActivity,
+  getStats,
+  getProfiles,
+  purchaseItem,
+  equipItem,
+  SHOP_CATALOG,
 };
