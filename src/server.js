@@ -281,10 +281,10 @@ app.post("/api/admin/session/delete", (req, res) => {
 app.post("/api/admin/session/proxy-add", (req, res) => {
   if (!checkAdminPassword(req, res)) return;
   const { groupId, month, date, sessionId, names } = req.body || {};
-  if (!groupId || !month || !date || !sessionId || !Array.isArray(names)) {
-    return res.status(400).json({ error: "groupId, month, date, sessionId, names[] are required" });
+  if (!groupId || !month || !date || !Array.isArray(names)) {
+    return res.status(400).json({ error: "groupId, month, date, names[] are required" });
   }
-  const monthData = adminAddProxyEntries(groupId, month, date, sessionId, names.slice(0, 20));
+  const monthData = adminAddProxyEntries(groupId, month, date, sessionId || null, names.slice(0, 20));
   res.json({ days: monthData.days });
 });
 

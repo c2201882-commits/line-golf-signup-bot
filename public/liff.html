@@ -687,6 +687,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     <div class="session-list" id="session-list"></div>
     <div class="sheet-actions">
       <button type="button" class="ghost" id="picker-cancel">取消</button>
+      <button type="button" class="primary" id="picker-admin-proxy-new" hidden>代客登記</button>
       <button type="button" class="primary" id="picker-new">＋ 開新的球局</button>
     </div>
   </div>
@@ -960,6 +961,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   document.getElementById("admin-proxy-submit").addEventListener("click", async () => {
     const names = adminProxyNamesInput.value.split(",").map((n) => n.trim()).filter(Boolean);
     if (names.length === 0) return;
+    const idsBefore = new Set(daySessions(adminProxyDateKey).map((s) => s.id));
     try {
       const res = await fetch("/api/admin/session/proxy-add", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -969,6 +971,11 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       if (res.ok) {
         daysData = data.days; render();
         adminProxyNamesInput.value = "";
+        if (!adminProxySessionId) {
+          // First submit for a brand-new session: pick up the id the server just generated.
+          const created = daySessions(adminProxyDateKey).find((s) => !idsBefore.has(s.id));
+          if (created) adminProxySessionId = created.id;
+        }
         renderAdminProxyList();
       }
     } catch (e) {}
@@ -1345,6 +1352,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
 
       sessionListEl.appendChild(item);
     });
+    document.getElementById("picker-admin-proxy-new").hidden = !isAdmin;
     pickerBackdrop.classList.add("open");
   }
   function closePicker() { pickerBackdrop.classList.remove("open"); pickerDateKey = null; }
@@ -1388,6 +1396,11 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   });
 
   document.getElementById("picker-cancel").addEventListener("click", closePicker);
+  document.getElementById("picker-admin-proxy-new").addEventListener("click", () => {
+    const dateKey = pickerDateKey;
+    closePicker();
+    if (dateKey) openAdminProxySheet(dateKey, null); // new session created lazily on first submit
+  });
   document.getElementById("picker-new").addEventListener("click", () => {
     const dateKey = pickerDateKey;
     closePicker();
