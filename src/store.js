@@ -388,9 +388,16 @@ const SHOP_CATALOG = {
   ],
   titles: [
     { id: "newbie", label: "新手上路", price: 0 },
-    { id: "earlybird", label: "早鳥常客", price: 80 },
-    { id: "swingking", label: "揮桿王", price: 120 },
-    { id: "legend", label: "球場傳說", price: 200 },
+    { id: "earlybird", label: "早鳥常客", price: 60 },
+    { id: "rising_star", label: "球場新星", price: 100 },
+    { id: "swingking", label: "揮桿好手", price: 140 },
+    { id: "champion", label: "常勝軍", price: 180 },
+    { id: "overlord", label: "球場霸主", price: 220 },
+    { id: "hole_in_one", label: "一桿進洞王", price: 260 },
+    { id: "swing_god", label: "揮桿之神", price: 320 },
+    { id: "legend", label: "球場傳說", price: 380 },
+    { id: "golf_emperor", label: "高爾夫皇者", price: 450 },
+    { id: "immortal", label: "不朽傳奇", price: 550 },
   ],
 };
 
