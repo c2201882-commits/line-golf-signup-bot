@@ -1263,7 +1263,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     lines.push(`『${target.month + 1}月打球開團囉⛳️』`, "");
 
     rows.forEach((r) => {
-      const names = sessionEntries(r.session).map(([, e]) => entryLabel(e)).join(" ");
+      const names = sessionEntries(r.session).map(([, e]) => entryLabel(e)).join(", ");
       const prefix = [r.session.course, r.session.teeTime].filter(Boolean).join(" ");
       const body = [prefix, names].filter(Boolean).join(" ");
       const full = r.count >= FULL_THRESHOLD ? " 🈵" : "";
