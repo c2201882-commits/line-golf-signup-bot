@@ -318,6 +318,47 @@ function adminDeleteSession(groupId, mKey, dateKey, sessionId) {
   return month ? migrateMonthDays(month) : { days: {} };
 }
 
+// Admin-only "代客登記": names with no LINE identity behind them (not tied
+// to any lineUserId, so only the admin can add/remove them — the person
+// themselves has no way to reach this entry from their own phone). Each
+// name gets its own randomly-keyed entry rather than the slug-based key
+// applyEntries uses, so entering the same name twice creates two distinct
+// people instead of merging into one.
+function adminAddProxyEntries(groupId, mKey, dateKey, sessionId, names) {
+  const data = load();
+  if (!data[groupId]) data[groupId] = {};
+  if (!data[groupId][mKey]) data[groupId][mKey] = { days: {} };
+  const month = data[groupId][mKey];
+  const day = ensureDay(month, dateKey);
+  const session = ensureSession(day, sessionId);
+
+  names.forEach((rawName) => {
+    const name = String(rawName).trim().slice(0, 30);
+    if (!name) return;
+    const key = `name:${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    session.entries[key] = { displayName: name, count: 1, updatedAt: Date.now() };
+    pushActivity(data, groupId, { type: "join", displayName: name, detail: shortDate(dateKey) });
+  });
+
+  save(data);
+  return migrateMonthDays(month);
+}
+
+function adminRemoveProxyEntry(groupId, mKey, dateKey, sessionId, entryKey) {
+  const data = load();
+  const month = data[groupId] && data[groupId][mKey];
+  const day = month && month.days[dateKey];
+  const session = day && (day.sessions || []).find((s) => s.id === sessionId);
+  if (session) {
+    delete session.entries[entryKey];
+    if (Object.keys(session.entries).length === 0) {
+      day.sessions = day.sessions.filter((s) => s.id !== sessionId);
+    }
+    save(data);
+  }
+  return month ? migrateMonthDays(month) : { days: {} };
+}
+
 // ---- stats: honor board + friendship pairs ---------------------------------
 // Derived read-only from every session across every month for this group —
 // nothing extra is stored. "count" here means "times signed up", not
@@ -572,5 +613,7 @@ module.exports = {
   purchaseItem,
   equipItem,
   adminDeleteSession,
+  adminAddProxyEntries,
+  adminRemoveProxyEntry,
   SHOP_CATALOG,
 };

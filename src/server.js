@@ -5,7 +5,8 @@ const { parseMessage } = require("./parser");
 const {
   applyEntries, getMonth, monthKey, canonicalDate, addSession, setVote, setSession, load, save,
   getBoard, addBoardMessage, deleteBoardMessage, setBoardPin, getActivity,
-  getStats, getProfiles, getCatalogFor, addCustomTitle, deleteCustomTitle, purchaseItem, equipItem, adminDeleteSession,
+  getStats, getProfiles, getCatalogFor, addCustomTitle, deleteCustomTitle, purchaseItem, equipItem,
+  adminDeleteSession, adminAddProxyEntries, adminRemoveProxyEntry,
 } = require("./store");
 const { formatSummary, HELP_TEXT, buildMenuQuickReply } = require("./summary");
 const { verifyIdToken } = require("./lineAuth");
@@ -274,6 +275,26 @@ app.post("/api/admin/session/delete", (req, res) => {
     return res.status(400).json({ error: "groupId, month, date, sessionId are required" });
   }
   const monthData = adminDeleteSession(groupId, month, date, sessionId);
+  res.json({ days: monthData.days });
+});
+
+app.post("/api/admin/session/proxy-add", (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  const { groupId, month, date, sessionId, names } = req.body || {};
+  if (!groupId || !month || !date || !sessionId || !Array.isArray(names)) {
+    return res.status(400).json({ error: "groupId, month, date, sessionId, names[] are required" });
+  }
+  const monthData = adminAddProxyEntries(groupId, month, date, sessionId, names.slice(0, 20));
+  res.json({ days: monthData.days });
+});
+
+app.post("/api/admin/session/proxy-remove", (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  const { groupId, month, date, sessionId, entryKey } = req.body || {};
+  if (!groupId || !month || !date || !sessionId || !entryKey) {
+    return res.status(400).json({ error: "groupId, month, date, sessionId, entryKey are required" });
+  }
+  const monthData = adminRemoveProxyEntry(groupId, month, date, sessionId, entryKey);
   res.json({ days: monthData.days });
 });
 

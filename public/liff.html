@@ -501,6 +501,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
           <button type="button" id="menu-guide-btn">使用說明</button>
           <button type="button" id="logout-btn">登出 / 切換帳號</button>
           <button type="button" id="admin-btn">管理員</button>
+          <button type="button" id="admin-logout-btn" hidden>登出管理員</button>
         </div>
       </div>
     </div>
@@ -691,6 +692,24 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   </div>
 </div>
 
+<div class="sheet-backdrop" id="admin-proxy-backdrop">
+  <div class="sheet">
+    <h3 id="admin-proxy-title">代客登記</h3>
+    <p class="sheet-sub">用逗號分隔多個名字，例如「David, Roy, KW」。重複的名字會視為不同人各自登記一筆。</p>
+    <div class="session-fields">
+      <input type="text" id="admin-proxy-names" placeholder="David, Roy, KW" />
+    </div>
+    <div class="sheet-actions" style="margin-bottom: 16px;">
+      <button type="button" class="primary" id="admin-proxy-submit">新增登記</button>
+    </div>
+    <p class="sheet-sub" id="admin-proxy-list-label" hidden>目前的代客登記（點擊移除）</p>
+    <div class="session-list" id="admin-proxy-list"></div>
+    <div class="sheet-actions">
+      <button type="button" class="ghost" id="admin-proxy-close">關閉</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet-backdrop" id="admin-login-backdrop">
   <div class="sheet">
     <h3>管理員登入</h3>
@@ -866,12 +885,24 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
         isAdmin = true; adminPassword = pw;
         adminLoginBackdrop.classList.remove("open");
         connText.textContent = "管理員模式已啟用";
+        document.getElementById("admin-btn").hidden = true;
+        document.getElementById("admin-logout-btn").hidden = false;
         if (boardLoaded) renderBoard();
         if (document.getElementById("admin-title-form")) document.getElementById("admin-title-form").hidden = false;
       } else {
         alert("密碼錯誤");
       }
     } catch (e) { alert("網路異常，請重試"); }
+  });
+
+  document.getElementById("admin-logout-btn").addEventListener("click", () => {
+    isAdmin = false; adminPassword = "";
+    accountMenu.classList.remove("open");
+    document.getElementById("admin-btn").hidden = false;
+    document.getElementById("admin-logout-btn").hidden = true;
+    connText.textContent = "已登出管理員模式";
+    if (document.getElementById("admin-title-form")) document.getElementById("admin-title-form").hidden = true;
+    if (boardLoaded) renderBoard();
   });
 
   async function adminDeleteSessionApi(dateKey, sessionId) {
@@ -882,6 +913,79 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       });
       const data = await res.json();
       if (res.ok) { daysData = data.days; render(); }
+    } catch (e) {}
+  }
+
+  // ---- admin: 代客登記 (proxy sign-ups with no LINE identity behind them) ----
+  const adminProxyBackdrop = document.getElementById("admin-proxy-backdrop");
+  const adminProxyNamesInput = document.getElementById("admin-proxy-names");
+  const adminProxyListEl = document.getElementById("admin-proxy-list");
+  const adminProxyListLabel = document.getElementById("admin-proxy-list-label");
+  let adminProxyDateKey = null;
+  let adminProxySessionId = null;
+
+  function openAdminProxySheet(dateKey, sessionId) {
+    adminProxyDateKey = dateKey;
+    adminProxySessionId = sessionId;
+    adminProxyNamesInput.value = "";
+    const dt = monthDates.find((d) => d.key === dateKey);
+    document.getElementById("admin-proxy-title").textContent = `${target.month + 1}/${dt.day} 代客登記`;
+    renderAdminProxyList();
+    adminProxyBackdrop.classList.add("open");
+  }
+  function closeAdminProxySheet() { adminProxyBackdrop.classList.remove("open"); }
+  document.getElementById("admin-proxy-close").addEventListener("click", closeAdminProxySheet);
+  adminProxyBackdrop.addEventListener("click", (e) => { if (e.target === adminProxyBackdrop) closeAdminProxySheet(); });
+
+  // Proxy entries are the "name:" keyed ones with no LINE identity behind
+  // them — everything else in this session belongs to a real LINE user.
+  function renderAdminProxyList() {
+    adminProxyListEl.innerHTML = "";
+    const session = daySessions(adminProxyDateKey).find((s) => s.id === adminProxySessionId);
+    const proxyEntries = session ? Object.entries(session.entries || {}).filter(([key]) => key.startsWith("name:")) : [];
+    adminProxyListLabel.hidden = proxyEntries.length === 0;
+    proxyEntries.forEach(([key, entry]) => {
+      const item = document.createElement("div"); item.className = "session-item";
+      const info = document.createElement("div"); info.className = "s-info";
+      const title = document.createElement("span"); title.className = "s-title"; title.textContent = entry.displayName;
+      info.appendChild(title);
+      const btn = document.createElement("button"); btn.type = "button"; btn.className = "danger";
+      btn.textContent = "移除";
+      btn.addEventListener("click", () => adminRemoveProxyApi(key));
+      item.appendChild(info); item.appendChild(btn);
+      adminProxyListEl.appendChild(item);
+    });
+  }
+
+  document.getElementById("admin-proxy-submit").addEventListener("click", async () => {
+    const names = adminProxyNamesInput.value.split(",").map((n) => n.trim()).filter(Boolean);
+    if (names.length === 0) return;
+    try {
+      const res = await fetch("/api/admin/session/proxy-add", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: adminPassword, groupId, month: monthKey, date: adminProxyDateKey, sessionId: adminProxySessionId, names }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        daysData = data.days; render();
+        adminProxyNamesInput.value = "";
+        renderAdminProxyList();
+      }
+    } catch (e) {}
+  });
+
+  async function adminRemoveProxyApi(entryKey) {
+    try {
+      const res = await fetch("/api/admin/session/proxy-remove", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: adminPassword, groupId, month: monthKey, date: adminProxyDateKey, sessionId: adminProxySessionId, entryKey }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        daysData = data.days; render();
+        if (daySessions(adminProxyDateKey).some((s) => s.id === adminProxySessionId)) renderAdminProxyList();
+        else closeAdminProxySheet();
+      }
     } catch (e) {}
   }
 
@@ -1194,7 +1298,10 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   // shows the picker so there's a way to reach "＋ 開新的球局".
   function openDayEntry(dateKey) {
     const sessions = daySessions(dateKey);
-    if (sessions.length === 0) { openSheet(dateKey, null, "count"); return; }
+    // Admins always go through the picker (even on an empty day) so 代客登記
+    // and ＋開新的球局 stay reachable without forcing them through their own
+    // personal headcount sheet first.
+    if (sessions.length === 0 && !isAdmin) { openSheet(dateKey, null, "count"); return; }
     openPicker(dateKey);
   }
 
@@ -1221,6 +1328,11 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       item.appendChild(info); item.appendChild(btn);
 
       if (isAdmin) {
+        const proxyBtn = document.createElement("button"); proxyBtn.type = "button";
+        proxyBtn.textContent = "代客登記";
+        proxyBtn.addEventListener("click", () => openAdminProxySheet(dateKey, session.id));
+        item.appendChild(proxyBtn);
+
         const delBtn = document.createElement("button"); delBtn.type = "button"; delBtn.className = "danger";
         delBtn.textContent = "管理員刪除";
         delBtn.addEventListener("click", async () => {
