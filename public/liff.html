@@ -1101,7 +1101,11 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     const extra = (e.guestNames || []).map((n) => (n || "").trim()).filter(Boolean);
     const named = [e.displayName, ...extra];
     const unnamed = Math.max(0, (e.count || 1) - named.length);
-    return unnamed > 0 ? `${named.join(", ")} +${unnamed}` : named.join(", ");
+    if (unnamed === 0) return named.join(", ");
+    // No named guests, just a headcount on one person's own name (e.g. "BR" signing up
+    // for 2) — "BR*2" reads more directly than "BR +1".
+    if (extra.length === 0) return `${e.displayName}*${e.count || 1}`;
+    return `${named.join(", ")} +${unnamed}`;
   }
   function todayKey() {
     const now = new Date();
