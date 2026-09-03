@@ -92,6 +92,25 @@ h1 {
 .month-nav:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
 .month-nav:disabled { opacity: 0.35; cursor: not-allowed; }
 
+.header-right { display: flex; align-items: center; gap: 8px; }
+.bell-wrap { position: relative; }
+.bell-btn {
+  position: relative; background: none; border: none; font-size: 18px; cursor: pointer;
+  padding: 6px 8px; border-radius: 999px; line-height: 1;
+}
+.bell-btn:hover { background: var(--surface-2); }
+.bell-badge {
+  position: absolute; top: -2px; right: 0; min-width: 15px; height: 15px; border-radius: 999px;
+  background: var(--danger); color: #fff; font-size: 9px; font-weight: 700; line-height: 15px;
+  text-align: center; padding: 0 3px;
+}
+.bell-panel {
+  position: absolute; right: 0; top: calc(100% + 8px); width: min(300px, 88vw); max-height: 360px;
+  overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 4px 16px var(--shadow); display: none; z-index: 45; padding: 12px;
+}
+.bell-panel.open { display: block; }
+.bell-panel-head { font-family: "Zen Maru Gothic", sans-serif; font-weight: 500; font-size: 13.5px; margin-bottom: 8px; }
 .account { position: relative; }
 .me {
   display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted);
@@ -376,6 +395,8 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; 
   border-radius: 7px; border: 1px solid var(--accent); background: transparent; color: var(--accent-strong); cursor: pointer;
 }
 .session-item button:hover { background: var(--accent-soft); }
+.session-item button.danger { border-color: var(--border); color: var(--muted); }
+.session-item button.danger:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-soft); }
 
 /* message board */
 .board-composer { margin-bottom: 20px; }
@@ -447,10 +468,24 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
         <button class="month-nav" id="next-month" type="button" aria-label="下個月">›</button>
       </div>
     </div>
-    <div class="account">
-      <button type="button" class="me" id="me-box">連接 LINE 中…</button>
-      <div class="account-menu" id="account-menu">
-        <button type="button" id="logout-btn">登出 / 切換帳號</button>
+    <div class="header-right">
+      <div class="bell-wrap">
+        <button type="button" class="bell-btn" id="bell-btn" aria-label="最新動態">
+          🔔<span class="bell-badge" id="bell-badge" hidden>0</span>
+        </button>
+        <div class="bell-panel" id="bell-panel">
+          <div class="bell-panel-head">最新動態</div>
+          <div class="activity-list" id="activity-list">
+            <p class="empty-note">還沒有任何動態</p>
+          </div>
+        </div>
+      </div>
+      <div class="account">
+        <button type="button" class="me" id="me-box">連接 LINE 中…</button>
+        <div class="account-menu" id="account-menu">
+          <button type="button" id="logout-btn">登出 / 切換帳號</button>
+          <button type="button" id="admin-btn">管理員</button>
+        </div>
       </div>
     </div>
   </header>
@@ -459,7 +494,6 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     <button type="button" class="tab-btn active" id="tab-signup">報名球局</button>
     <button type="button" class="tab-btn" id="tab-my">我的報名</button>
     <button type="button" class="tab-btn" id="tab-board">留言板</button>
-    <button type="button" class="tab-btn" id="tab-activity">最新動態</button>
     <button type="button" class="tab-btn" id="tab-honor">榮譽榜</button>
     <button type="button" class="tab-btn" id="tab-friend">好友度</button>
     <button type="button" class="tab-btn" id="tab-shop">裝扮商店</button>
@@ -509,12 +543,6 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     </div>
   </div>
 
-  <div class="view" id="view-activity">
-    <div class="activity-list" id="activity-list">
-      <p class="empty-note">還沒有任何動態</p>
-    </div>
-  </div>
-
   <div class="view" id="view-honor">
     <section class="summary">
       <h2>榮譽榜</h2>
@@ -547,7 +575,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
         <span class="points-pill" id="shop-points">⛳ 0 點</span>
       </div>
       <div class="hero-card">
-        <div class="avatar-frame" id="shop-avatar-frame"><span class="initials" id="shop-avatar-initials">?</span></div>
+        <div id="shop-avatar-slot"></div>
         <div class="info">
           <div class="label">目前裝扮</div>
           <div class="name" id="shop-name">—</div>
@@ -561,6 +589,17 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       <div class="shop-section">
         <h3>專屬稱號</h3>
         <div class="shop-grid" id="shop-titles"></div>
+      </div>
+      <div class="shop-section" id="admin-title-form" hidden>
+        <h3>管理員：新增稱號</h3>
+        <div class="session-fields">
+          <input type="text" id="admin-title-id" placeholder="代碼（英文/數字，不重複）" maxlength="20" />
+          <input type="text" id="admin-title-label" placeholder="稱號名稱" maxlength="20" />
+          <input type="number" id="admin-title-price" placeholder="解鎖點數" min="0" value="100" />
+        </div>
+        <div class="sheet-actions">
+          <button type="button" class="primary" id="admin-title-submit">新增稱號</button>
+        </div>
       </div>
     </section>
   </div>
@@ -626,6 +665,20 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     <div class="sheet-actions">
       <button type="button" class="ghost" id="picker-cancel">取消</button>
       <button type="button" class="primary" id="picker-new">＋ 開新的球局</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="admin-login-backdrop">
+  <div class="sheet">
+    <h3>管理員登入</h3>
+    <p class="sheet-sub">輸入管理員密碼後，可以刪除任何球局／留言、設定置頂、新增稱號</p>
+    <div class="session-fields">
+      <input type="password" id="admin-password-input" placeholder="密碼" autocomplete="off" />
+    </div>
+    <div class="sheet-actions">
+      <button type="button" class="ghost" id="admin-login-cancel">取消</button>
+      <button type="button" class="primary" id="admin-login-submit">登入</button>
     </div>
   </div>
 </div>
@@ -723,7 +776,6 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     signup: { btn: document.getElementById("tab-signup"), view: document.getElementById("view-signup") },
     my: { btn: document.getElementById("tab-my"), view: document.getElementById("view-my") },
     board: { btn: document.getElementById("tab-board"), view: document.getElementById("view-board") },
-    activity: { btn: document.getElementById("tab-activity"), view: document.getElementById("view-activity") },
     honor: { btn: document.getElementById("tab-honor"), view: document.getElementById("view-honor") },
     friend: { btn: document.getElementById("tab-friend"), view: document.getElementById("view-friend") },
     shop: { btn: document.getElementById("tab-shop"), view: document.getElementById("view-shop") },
@@ -736,7 +788,6 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       tabs[name].view.classList.toggle("active", name === active);
     });
     if (active === "board") loadBoard();
-    if (active === "activity") loadActivity();
     if (active === "honor" || active === "friend") loadStats();
     if (active === "shop") loadShop();
   }
@@ -748,6 +799,95 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   document.getElementById("logout-btn").addEventListener("click", () => {
     try { liff.logout(); } catch (e) {}
     location.reload();
+  });
+
+  // ---- admin mode ----
+  // A single shared password (not tied to a LINE identity) gates a handful
+  // of overrides: deleting any session, deleting/pinning any board message,
+  // and adding new shop titles. Every admin route re-checks the password
+  // server-side — this client-side flag only decides what buttons to show.
+  let isAdmin = false;
+  let adminPassword = "";
+  const adminLoginBackdrop = document.getElementById("admin-login-backdrop");
+  const adminPasswordInput = document.getElementById("admin-password-input");
+
+  document.getElementById("admin-btn").addEventListener("click", () => {
+    accountMenu.classList.remove("open");
+    adminPasswordInput.value = "";
+    adminLoginBackdrop.classList.add("open");
+  });
+  document.getElementById("admin-login-cancel").addEventListener("click", () => adminLoginBackdrop.classList.remove("open"));
+  adminLoginBackdrop.addEventListener("click", (e) => { if (e.target === adminLoginBackdrop) adminLoginBackdrop.classList.remove("open"); });
+  document.getElementById("admin-login-submit").addEventListener("click", async () => {
+    const pw = adminPasswordInput.value;
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ password: pw }),
+      });
+      if (res.ok) {
+        isAdmin = true; adminPassword = pw;
+        adminLoginBackdrop.classList.remove("open");
+        connText.textContent = "管理員模式已啟用";
+        if (boardLoaded) renderBoard();
+        if (document.getElementById("admin-title-form")) document.getElementById("admin-title-form").hidden = false;
+      } else {
+        alert("密碼錯誤");
+      }
+    } catch (e) { alert("網路異常，請重試"); }
+  });
+
+  async function adminDeleteSessionApi(dateKey, sessionId) {
+    try {
+      const res = await fetch("/api/admin/session/delete", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: adminPassword, groupId, month: monthKey, date: dateKey, sessionId }),
+      });
+      const data = await res.json();
+      if (res.ok) { daysData = data.days; render(); }
+    } catch (e) {}
+  }
+
+  async function adminBoardDelete(messageId) {
+    try {
+      const res = await fetch("/api/admin/board/delete", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: adminPassword, groupId, messageId }),
+      });
+      const data = await res.json();
+      if (res.ok) { boardMessages = data.messages; renderBoard(); }
+    } catch (e) {}
+  }
+
+  async function adminBoardPin(messageId, pinned) {
+    try {
+      const res = await fetch("/api/admin/board/pin", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: adminPassword, groupId, messageId, pinned }),
+      });
+      const data = await res.json();
+      if (res.ok) { boardMessages = data.messages; renderBoard(); }
+    } catch (e) {}
+  }
+
+  document.getElementById("admin-title-submit").addEventListener("click", async () => {
+    const id = document.getElementById("admin-title-id").value.trim();
+    const label = document.getElementById("admin-title-label").value.trim();
+    const price = document.getElementById("admin-title-price").value;
+    if (!id || !label) return alert("代碼跟名稱都要填");
+    try {
+      const res = await fetch("/api/admin/titles/add", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: adminPassword, groupId, id, label, price }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        document.getElementById("admin-title-id").value = "";
+        document.getElementById("admin-title-label").value = "";
+        await loadShop();
+      } else {
+        alert("新增失敗：" + (data.error || "請重試"));
+      }
+    } catch (e) {}
   });
 
   function isAtFloor() { return target.year === floorMonth.year && target.month === floorMonth.month; }
@@ -1031,8 +1171,19 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
         if (alreadyIn) openEntryMenu(dateKey, session.id);
         else openSheet(dateKey, session.id, "count");
       });
-
       item.appendChild(info); item.appendChild(btn);
+
+      if (isAdmin) {
+        const delBtn = document.createElement("button"); delBtn.type = "button"; delBtn.className = "danger";
+        delBtn.textContent = "管理員刪除";
+        delBtn.addEventListener("click", async () => {
+          if (!confirm(`【管理員】確定要刪除「${sessionLabel(session)}」這個球局嗎？目前有 ${sessionCount(session)} 人報名。`)) return;
+          await adminDeleteSessionApi(dateKey, session.id);
+          if (daySessions(dateKey).length > 0) openPicker(dateKey); else closePicker();
+        });
+        item.appendChild(delBtn);
+      }
+
       sessionListEl.appendChild(item);
     });
     pickerBackdrop.classList.add("open");
@@ -1219,6 +1370,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
 
   let myUserId = null;
   let meDisplayName = null;
+  let mePictureUrl = null;
   let liffReady = false;
 
   // liff.getIDToken() can go stale/null after the token's ~1hr lifetime, especially
@@ -1347,7 +1499,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       const head = document.createElement("div"); head.className = "b-head";
       if (m.pinned) { const flag = document.createElement("span"); flag.className = "pin-flag"; flag.textContent = "📌 置頂"; head.appendChild(flag); }
 
-      const tierId = tierIdFor(m.lineUserId);
+      const tierId = frameTierIdFor(m.lineUserId);
       const avatar = buildAvatar(m.pictureUrl, (m.displayName || "?").slice(0, 2), tierId);
       avatar.style.width = "22px"; avatar.style.height = "22px"; avatar.style.borderWidth = "2px";
       const initEl = avatar.querySelector(".initials"); if (initEl) initEl.style.fontSize = "9px";
@@ -1363,14 +1515,19 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
 
       card.appendChild(head); card.appendChild(text);
 
-      if (m.lineUserId === myUserId) {
+      const isMine = m.lineUserId === myUserId;
+      if (isMine || isAdmin) {
         const actions = document.createElement("div"); actions.className = "b-actions";
+        if (isAdmin && !isMine) { const tag = document.createElement("span"); tag.className = "row-title-tag"; tag.textContent = "管理員"; actions.appendChild(tag); }
         const pinBtn = document.createElement("button"); pinBtn.type = "button";
         pinBtn.textContent = m.pinned ? "取消置頂" : "置頂";
-        pinBtn.addEventListener("click", () => boardSetPin(m.id, !m.pinned));
+        pinBtn.addEventListener("click", () => isMine ? boardSetPin(m.id, !m.pinned) : adminBoardPin(m.id, !m.pinned));
         const delBtn = document.createElement("button"); delBtn.type = "button"; delBtn.className = "danger";
         delBtn.textContent = "刪除";
-        delBtn.addEventListener("click", () => { if (confirm("確定要刪除這則留言嗎？")) boardDelete(m.id); });
+        delBtn.addEventListener("click", () => {
+          if (!confirm("確定要刪除這則留言嗎？")) return;
+          isMine ? boardDelete(m.id) : adminBoardDelete(m.id);
+        });
         actions.appendChild(pinBtn); actions.appendChild(delBtn);
         card.appendChild(actions);
       }
@@ -1447,8 +1604,38 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       const data = await res.json();
       activityItems = data.activity || [];
       renderActivity();
+      updateBellBadge();
     } catch (e) {}
   }
+
+  // ---- notification bell ----
+  // "Unread" is tracked per-device in localStorage (the API itself has no
+  // per-viewer read state) — anything newer than the last time this browser
+  // opened the panel counts toward the badge.
+  const bellBtn = document.getElementById("bell-btn");
+  const bellPanel = document.getElementById("bell-panel");
+  const bellBadge = document.getElementById("bell-badge");
+  function lastSeenActivityAt() {
+    try { return Number(localStorage.getItem("golf_activity_last_seen")) || 0; } catch (e) { return 0; }
+  }
+  function updateBellBadge() {
+    const lastSeen = lastSeenActivityAt();
+    const unread = activityItems.filter((item) => item.createdAt > lastSeen).length;
+    bellBadge.hidden = unread === 0;
+    bellBadge.textContent = unread > 99 ? "99+" : String(unread);
+  }
+  bellBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const opening = !bellPanel.classList.contains("open");
+    bellPanel.classList.toggle("open", opening);
+    if (opening) {
+      loadActivity();
+      try { localStorage.setItem("golf_activity_last_seen", String(Date.now())); } catch (err) {}
+      bellBadge.hidden = true;
+    }
+  });
+  document.addEventListener("click", () => bellPanel.classList.remove("open"));
+  bellPanel.addEventListener("click", (e) => e.stopPropagation());
 
   // ---- honor board + friendship pairs ----
   // Tiers borrow the grey/green/blue/purple/gold rarity convention from
@@ -1484,9 +1671,13 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     return frame;
   }
 
-  function buildHeroCard({ tierId, pictureUrl, initials, label, name, subText, pillText }) {
+  // avatarTierId colors the frame around the photo (= the frame equipped in
+  // 裝扮商店, defaulting to grey); pillTierId/pillText is the separate
+  // automatic achievement badge based on sign-up count. They're often the
+  // same number but are conceptually different and can diverge.
+  function buildHeroCard({ avatarTierId, pictureUrl, initials, label, name, subText, pillTierId, pillText }) {
     const card = document.createElement("div"); card.className = "hero-card";
-    card.appendChild(buildAvatar(pictureUrl, initials, tierId));
+    card.appendChild(buildAvatar(pictureUrl, initials, avatarTierId));
 
     const info = document.createElement("div"); info.className = "info";
     const labelEl = document.createElement("div"); labelEl.className = "label"; labelEl.textContent = label;
@@ -1495,7 +1686,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     info.appendChild(labelEl); info.appendChild(nameEl); info.appendChild(subEl);
 
     const pill = document.createElement("span"); pill.className = "tier-pill";
-    pill.style.background = `var(--tier-${tierId}-soft)`; pill.style.color = `var(--tier-${tierId})`;
+    pill.style.background = `var(--tier-${pillTierId}-soft)`; pill.style.color = `var(--tier-${pillTierId})`;
     pill.textContent = pillText;
 
     card.appendChild(info); card.appendChild(pill);
@@ -1505,14 +1696,14 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   // titleLabel is the person's equipped 裝扮商店 title (may be empty if they
   // haven't set one) — shown right after their name, separate from the tier
   // pill which reflects their automatic sign-up-count achievement.
-  function buildRankRow(rankNum, tierId, pictureUrl, initials, name, tierLabel, countText, titleLabel) {
+  function buildRankRow(rankNum, avatarTierId, pictureUrl, initials, name, pillTierId, tierLabel, countText, titleLabel) {
     const row = document.createElement("div");
     row.className = "rank-row" + (rankNum === 1 ? " top1" : rankNum === 2 ? " top2" : "");
     const rank = document.createElement("div"); rank.className = "rank"; rank.textContent = rankNum;
 
     const avatarWrap = document.createElement("div");
     avatarWrap.style.width = "30px"; avatarWrap.style.height = "30px"; avatarWrap.style.flexShrink = "0";
-    const avatar = buildAvatar(pictureUrl, initials, tierId);
+    const avatar = buildAvatar(pictureUrl, initials, avatarTierId);
     avatar.style.width = "30px"; avatar.style.height = "30px"; avatar.style.borderWidth = "2px";
     avatar.querySelector(".initials") && (avatar.querySelector(".initials").style.fontSize = "10px");
     avatarWrap.appendChild(avatar);
@@ -1523,7 +1714,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       nameEl.appendChild(titleTag);
     }
     const pill = document.createElement("span"); pill.className = "tier-pill";
-    pill.style.background = `var(--tier-${tierId}-soft)`; pill.style.color = `var(--tier-${tierId})`;
+    pill.style.background = `var(--tier-${pillTierId}-soft)`; pill.style.color = `var(--tier-${pillTierId})`;
     pill.textContent = tierLabel;
     const count = document.createElement("div"); count.className = "count"; count.textContent = countText;
     row.appendChild(rank); row.appendChild(avatarWrap); row.appendChild(nameEl); row.appendChild(pill); row.appendChild(count);
@@ -1541,12 +1732,40 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     return item ? item.label : "";
   }
 
-  // Same tier frame used on 榮譽榜, applied wherever else an avatar shows up
-  // (header, message board) so it reads as one consistent rule everywhere.
-  function tierIdFor(lineUserId) {
+  // The achievement tier (automatic, from sign-up count) — used for the
+  // small tier pill/badge text, never for the avatar frame itself.
+  function achievementTierIdFor(lineUserId) {
     if (!statsData || !lineUserId) return 1;
     const entry = statsData.leaderboard.find((b) => b.lineUserId === lineUserId);
     return entry ? tierForCount(entry.count).id : 1;
+  }
+
+  // The avatar frame color everywhere in the app (header, 榮譽榜, 留言板, 裝扮商店
+  // preview) is whatever frame that person has equipped in 裝扮商店 — defaults
+  // to grey until they buy/equip something else. This is the one rule that
+  // decides "what color ring shows around this person's photo."
+  const FRAME_TIER_ID = { grey: 1, green: 2, blue: 3, purple: 4, gold: 5 };
+  function frameTierIdFor(lineUserId) {
+    if (!profilesData || !lineUserId) return 1;
+    const profile = profilesData.profiles[lineUserId];
+    const frameId = profile && profile.equipped && profile.equipped.frame;
+    return FRAME_TIER_ID[frameId] || 1;
+  }
+
+  // Rebuilds the header's own avatar+name — called on init and again after
+  // any shop purchase/equip so a newly-equipped frame shows up immediately
+  // instead of only on the next page load.
+  function refreshHeaderAvatar() {
+    if (!myUserId) return;
+    meBox.innerHTML = "";
+    const avatar = buildAvatar(mePictureUrl, (meDisplayName || "?").slice(0, 2), frameTierIdFor(myUserId));
+    avatar.style.width = "26px"; avatar.style.height = "26px"; avatar.style.borderWidth = "2px";
+    const initEl = avatar.querySelector(".initials"); if (initEl) initEl.style.fontSize = "10px";
+    const name = document.createElement("span"); name.textContent = meDisplayName;
+    const chev = document.createElement("span"); chev.className = "chev"; chev.textContent = "▾";
+    meBox.appendChild(avatar);
+    meBox.appendChild(name);
+    meBox.appendChild(chev);
   }
 
   async function loadStats() {
@@ -1580,12 +1799,13 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       const tier = tierForCount(mine.count);
       const gap = nextTierGap(mine.count);
       meEl.appendChild(buildHeroCard({
-        tierId: tier.id,
+        avatarTierId: frameTierIdFor(myUserId),
         pictureUrl: mine.pictureUrl,
         initials: (mine.displayName || "?").slice(0, 2),
         label: `你的排名 #${myIndex + 1}`,
         name: mine.displayName,
         subText: `累積報名 ${mine.count} 次` + (gap ? ` · 距離下一等級還差 ${gap} 次` : ""),
+        pillTierId: tier.id,
         pillText: tier.label,
       }));
     }
@@ -1593,8 +1813,8 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     board.forEach((b, i) => {
       const tier = tierForCount(b.count);
       listEl.appendChild(buildRankRow(
-        i + 1, tier.id, b.pictureUrl, (b.displayName || "?").slice(0, 2),
-        b.displayName, tier.label, `${b.count} 次`, titleLabelFor(b.lineUserId)
+        i + 1, frameTierIdFor(b.lineUserId), b.pictureUrl, (b.displayName || "?").slice(0, 2),
+        b.displayName, tier.id, tier.label, `${b.count} 次`, titleLabelFor(b.lineUserId)
       ));
     });
   }
@@ -1612,23 +1832,25 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     const myPairs = pairs.filter((p) => p.aId === myUserId || p.bId === myUserId);
     if (myPairs.length > 0) {
       const best = myPairs[0];
+      const partnerId = best.aId === myUserId ? best.bId : best.aId;
       const partnerName = best.aId === myUserId ? best.bName : best.aName;
       const partnerPicture = best.aId === myUserId ? best.bPictureUrl : best.aPictureUrl;
-      const tierId = tierForCount(best.count).id;
+      const pillTierId = tierForCount(best.count).id;
       meEl.appendChild(buildHeroCard({
-        tierId,
+        avatarTierId: frameTierIdFor(partnerId),
         pictureUrl: partnerPicture,
         initials: (partnerName || "?").slice(0, 2),
         label: "你最麻吉的球友",
         name: partnerName,
         subText: `一起報名過 ${best.count} 次`,
-        pillText: PAIR_TIER_LABELS[tierId],
+        pillTierId,
+        pillText: PAIR_TIER_LABELS[pillTierId],
       }));
     }
 
     pairs.forEach((p, i) => {
-      const tierId = tierForCount(p.count).id;
-      const row = buildRankRow(i + 1, tierId, null, "", "", PAIR_TIER_LABELS[tierId], `${p.count} 次`, "");
+      const pillTierId = tierForCount(p.count).id;
+      const row = buildRankRow(i + 1, 1, null, "", "", pillTierId, PAIR_TIER_LABELS[pillTierId], `${p.count} 次`, "");
       const nameEl = row.querySelector(".row-name");
       nameEl.textContent = p.aName;
       const sep = document.createElement("span"); sep.className = "link-sep"; sep.textContent = "⛳";
@@ -1645,10 +1867,12 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     try {
       const res = await fetch(`/api/profiles?groupId=${encodeURIComponent(groupId)}`);
       shopData = await res.json();
+      profilesData = shopData; // same shape as /api/profiles used elsewhere — keep frameTierIdFor()/titleLabelFor() in sync
     } catch (e) {
       shopData = null;
     }
     renderShop();
+    refreshHeaderAvatar();
   }
 
   function myProfile() {
@@ -1661,12 +1885,13 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     const catalog = (shopData && shopData.catalog) || { frames: [], titles: [] };
     const profile = myProfile();
 
+    document.getElementById("admin-title-form").hidden = !isAdmin;
     document.getElementById("shop-points").textContent = `⛳ ${profile.points} 點`;
     document.getElementById("shop-name").textContent = meDisplayName || "—";
-    const frame = document.getElementById("shop-avatar-frame");
     const frameTierId = FRAME_TIER_ID[profile.equipped.frame] || 1;
-    frame.className = `avatar-frame tier-${frameTierId}`;
-    document.getElementById("shop-avatar-initials").textContent = (meDisplayName || "?").slice(0, 2);
+    const slot = document.getElementById("shop-avatar-slot");
+    slot.innerHTML = "";
+    slot.appendChild(buildAvatar(mePictureUrl, (meDisplayName || "?").slice(0, 2), frameTierId));
 
     const titleItem = catalog.titles.find((t) => t.id === profile.equipped.title);
     const titlePill = document.getElementById("shop-title-pill");
@@ -1679,7 +1904,6 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     renderShopGrid("shop-titles", "titles", catalog.titles, profile, null);
   }
 
-  const FRAME_TIER_ID = { grey: 1, green: 2, blue: 3, purple: 4, gold: 5 };
   const TITLE_TIER_ID = {
     newbie: 1, earlybird: 1, rising_star: 2, swingking: 2, champion: 3, overlord: 3,
     hole_in_one: 4, swing_god: 4, legend: 5, golf_emperor: 5, immortal: 5,
@@ -1802,7 +2026,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     pollTimer = setInterval(() => {
       loadState({ silent: true });
       if (tabs.board.view.classList.contains("active")) loadBoard();
-      if (tabs.activity.view.classList.contains("active")) loadActivity();
+      loadActivity(); // keeps the bell badge current regardless of which tab is open
     }, 4000);
   }
   document.addEventListener("focusout", () => {
@@ -1843,20 +2067,13 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       const profile = await liff.getProfile();
       myUserId = profile.userId;
       meDisplayName = profile.displayName;
+      mePictureUrl = profile.pictureUrl || null;
 
       await loadStatsAndProfilesOnly(); // for the header avatar's tier frame
-
-      meBox.innerHTML = "";
-      const avatar = buildAvatar(profile.pictureUrl, (profile.displayName || "?").slice(0, 2), tierIdFor(myUserId));
-      avatar.style.width = "26px"; avatar.style.height = "26px"; avatar.style.borderWidth = "2px";
-      const initEl = avatar.querySelector(".initials"); if (initEl) initEl.style.fontSize = "10px";
-      const name = document.createElement("span"); name.textContent = profile.displayName;
-      const chev = document.createElement("span"); chev.className = "chev"; chev.textContent = "▾";
-      meBox.appendChild(avatar);
-      meBox.appendChild(name);
-      meBox.appendChild(chev);
+      refreshHeaderAvatar();
 
       await loadState();
+      loadActivity();
       startPolling();
     } catch (e) {
       connText.textContent = "無法連接 LINE，僅供預覽";

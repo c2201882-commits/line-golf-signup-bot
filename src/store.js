@@ -275,30 +275,47 @@ function getActivity(groupId) {
 }
 
 // Both mutations require the caller's lineUserId to match the message's
-// author — enforced here, not just hidden client-side.
-function deleteBoardMessage(groupId, messageId, lineUserId, displayName) {
+// author — enforced here, not just hidden client-side. `asAdmin` (only ever
+// set by the password-gated admin routes) bypasses the author check.
+function deleteBoardMessage(groupId, messageId, lineUserId, displayName, asAdmin) {
   const data = load();
   const board = (data[groupId] && data[groupId].board) || [];
   const message = board.find((m) => m.id === messageId);
   if (!message) return { ok: true, board };
-  if (message.lineUserId !== lineUserId) return { ok: false, board };
+  if (!asAdmin && message.lineUserId !== lineUserId) return { ok: false, board };
 
   data[groupId].board = board.filter((m) => m.id !== messageId);
-  pushActivity(data, groupId, { type: "board_delete", displayName });
+  pushActivity(data, groupId, { type: "board_delete", displayName: displayName || "管理員" });
   save(data);
   return { ok: true, board: data[groupId].board };
 }
 
-function setBoardPin(groupId, messageId, lineUserId, pinned) {
+function setBoardPin(groupId, messageId, lineUserId, pinned, asAdmin) {
   const data = load();
   const board = (data[groupId] && data[groupId].board) || [];
   const message = board.find((m) => m.id === messageId);
   if (!message) return { ok: true, board };
-  if (message.lineUserId !== lineUserId) return { ok: false, board };
+  if (!asAdmin && message.lineUserId !== lineUserId) return { ok: false, board };
 
   message.pinned = !!pinned;
   save(data);
   return { ok: true, board };
+}
+
+// Admin-only: remove any session regardless of who's in it (normal users can
+// only ever reach 0 participants, which auto-removes a session — see
+// setVote above; this is the one direct "delete" path, gated by password in
+// server.js, not exposed on the regular /api/session* routes).
+function adminDeleteSession(groupId, mKey, dateKey, sessionId) {
+  const data = load();
+  const month = data[groupId] && data[groupId][mKey];
+  const day = month && month.days[dateKey];
+  if (day) {
+    migrateDayShape(day);
+    day.sessions = day.sessions.filter((s) => s.id !== sessionId);
+    save(data);
+  }
+  return month ? migrateMonthDays(month) : { days: {} };
 }
 
 // ---- stats: honor board + friendship pairs ---------------------------------
@@ -422,6 +439,26 @@ function earnedPoints(groupId, lineUserId) {
   return (mine ? mine.count : 0) * POINTS_PER_JOIN;
 }
 
+// Groups can grow their own title catalog via the admin panel (frames stay
+// fixed) — data[groupId].customTitles, merged on top of the built-in list.
+function getCatalogFor(groupId) {
+  const data = load();
+  const customTitles = (data[groupId] && data[groupId].customTitles) || [];
+  return { frames: SHOP_CATALOG.frames, titles: SHOP_CATALOG.titles.concat(customTitles) };
+}
+
+function addCustomTitle(groupId, { id, label, price }) {
+  const data = load();
+  if (!data[groupId]) data[groupId] = {};
+  if (!Array.isArray(data[groupId].customTitles)) data[groupId].customTitles = [];
+  const catalog = getCatalogFor(groupId);
+  if (catalog.titles.some((t) => t.id === id)) return { ok: false, error: "id already exists" };
+
+  data[groupId].customTitles.push({ id, label, price: Math.max(0, Number(price) || 0) });
+  save(data);
+  return { ok: true, catalog: getCatalogFor(groupId) };
+}
+
 // Public: every member's equipped look + available points, keyed by lineUserId.
 function getProfiles(groupId) {
   const data = load();
@@ -436,7 +473,7 @@ function getProfiles(groupId) {
 }
 
 function purchaseItem(groupId, lineUserId, displayName, itemType, itemId) {
-  const catalog = SHOP_CATALOG[itemType];
+  const catalog = getCatalogFor(groupId)[itemType];
   const item = catalog && catalog.find((i) => i.id === itemId);
   if (!item) return { ok: false, error: "unknown item" };
 
@@ -483,7 +520,10 @@ module.exports = {
   getActivity,
   getStats,
   getProfiles,
+  getCatalogFor,
+  addCustomTitle,
   purchaseItem,
   equipItem,
+  adminDeleteSession,
   SHOP_CATALOG,
 };

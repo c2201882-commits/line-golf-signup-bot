@@ -5,7 +5,7 @@ const { parseMessage } = require("./parser");
 const {
   applyEntries, getMonth, monthKey, canonicalDate, addSession, setVote, setSession, load, save,
   getBoard, addBoardMessage, deleteBoardMessage, setBoardPin, getActivity,
-  getStats, getProfiles, purchaseItem, equipItem, SHOP_CATALOG,
+  getStats, getProfiles, getCatalogFor, addCustomTitle, purchaseItem, equipItem, adminDeleteSession,
 } = require("./store");
 const { formatSummary, HELP_TEXT, buildMenuQuickReply } = require("./summary");
 const { verifyIdToken } = require("./lineAuth");
@@ -210,7 +210,7 @@ app.get("/api/stats", (req, res) => {
 app.get("/api/profiles", (req, res) => {
   const { groupId } = req.query;
   if (!groupId) return res.status(400).json({ error: "groupId is required" });
-  res.json({ profiles: getProfiles(groupId), catalog: SHOP_CATALOG });
+  res.json({ profiles: getProfiles(groupId), catalog: getCatalogFor(groupId) });
 });
 
 app.post("/api/shop/purchase", async (req, res) => {
@@ -245,6 +245,61 @@ app.post("/api/shop/equip", async (req, res) => {
   const result = equipItem(groupId, identity.lineUserId, identity.displayName, itemType, itemId);
   if (!result.ok) return res.status(400).json({ error: result.error });
   res.json({ profile: result.profile });
+});
+
+// ---- Admin: password-gated, can override the normal per-user rules --------
+// A shared password (not tied to any one LINE identity) — fine for a small
+// trusted group; every admin route re-checks it independently rather than
+// relying on a login session.
+
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin";
+
+function checkAdminPassword(req, res) {
+  if ((req.body || {}).password !== ADMIN_PASSWORD) {
+    res.status(401).json({ error: "wrong password" });
+    return false;
+  }
+  return true;
+}
+
+app.post("/api/admin/login", (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  res.json({ ok: true });
+});
+
+app.post("/api/admin/session/delete", (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  const { groupId, month, date, sessionId } = req.body || {};
+  if (!groupId || !month || !date || !sessionId) {
+    return res.status(400).json({ error: "groupId, month, date, sessionId are required" });
+  }
+  const monthData = adminDeleteSession(groupId, month, date, sessionId);
+  res.json({ days: monthData.days });
+});
+
+app.post("/api/admin/board/delete", (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  const { groupId, messageId } = req.body || {};
+  if (!groupId || !messageId) return res.status(400).json({ error: "groupId and messageId are required" });
+  const result = deleteBoardMessage(groupId, messageId, null, "管理員", true);
+  res.json({ messages: result.board });
+});
+
+app.post("/api/admin/board/pin", (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  const { groupId, messageId, pinned } = req.body || {};
+  if (!groupId || !messageId) return res.status(400).json({ error: "groupId and messageId are required" });
+  const result = setBoardPin(groupId, messageId, null, !!pinned, true);
+  res.json({ messages: result.board });
+});
+
+app.post("/api/admin/titles/add", (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  const { groupId, id, label, price } = req.body || {};
+  if (!groupId || !id || !label) return res.status(400).json({ error: "groupId, id, label are required" });
+  const result = addCustomTitle(groupId, { id: String(id).trim(), label: String(label).trim().slice(0, 20), price });
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  res.json({ catalog: result.catalog });
 });
 
 // ---- Admin backup/restore --------------------------------------------------
