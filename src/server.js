@@ -5,7 +5,7 @@ const { parseMessage } = require("./parser");
 const {
   applyEntries, getMonth, monthKey, canonicalDate, addSession, setVote, setSession, load, save,
   getBoard, addBoardMessage, deleteBoardMessage, setBoardPin, getActivity,
-  getStats, getProfiles, getCatalogFor, addCustomTitle, purchaseItem, equipItem, adminDeleteSession,
+  getStats, getProfiles, getCatalogFor, addCustomTitle, deleteCustomTitle, purchaseItem, equipItem, adminDeleteSession,
 } = require("./store");
 const { formatSummary, HELP_TEXT, buildMenuQuickReply } = require("./summary");
 const { verifyIdToken } = require("./lineAuth");
@@ -295,9 +295,18 @@ app.post("/api/admin/board/pin", (req, res) => {
 
 app.post("/api/admin/titles/add", (req, res) => {
   if (!checkAdminPassword(req, res)) return;
-  const { groupId, id, label, price } = req.body || {};
-  if (!groupId || !id || !label) return res.status(400).json({ error: "groupId, id, label are required" });
-  const result = addCustomTitle(groupId, { id: String(id).trim(), label: String(label).trim().slice(0, 20), price });
+  const { groupId, label, price, tier } = req.body || {};
+  if (!groupId || !label) return res.status(400).json({ error: "groupId and label are required" });
+  const result = addCustomTitle(groupId, { label: String(label).trim().slice(0, 20), price, tier });
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  res.json({ catalog: result.catalog });
+});
+
+app.post("/api/admin/titles/delete", (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  const { groupId, id } = req.body || {};
+  if (!groupId || !id) return res.status(400).json({ error: "groupId and id are required" });
+  const result = deleteCustomTitle(groupId, id);
   if (!result.ok) return res.status(400).json({ error: result.error });
   res.json({ catalog: result.catalog });
 });

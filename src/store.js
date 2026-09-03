@@ -395,26 +395,29 @@ function getStats(groupId) {
 
 const POINTS_PER_JOIN = 10;
 
+// `tier` (1-5, grey/green/blue/purple/gold) drives that item's color
+// everywhere in the UI — every catalog entry, built-in or admin-added,
+// carries one so nothing needs a separate hardcoded id->color map.
 const SHOP_CATALOG = {
   frames: [
-    { id: "grey", label: "灰框", price: 0 },
-    { id: "green", label: "綠框", price: 50 },
-    { id: "blue", label: "藍框", price: 100 },
-    { id: "purple", label: "紫框", price: 150 },
-    { id: "gold", label: "金框", price: 250 },
+    { id: "grey", label: "灰框", price: 0, tier: 1 },
+    { id: "green", label: "綠框", price: 50, tier: 2 },
+    { id: "blue", label: "藍框", price: 100, tier: 3 },
+    { id: "purple", label: "紫框", price: 150, tier: 4 },
+    { id: "gold", label: "金框", price: 250, tier: 5 },
   ],
   titles: [
-    { id: "newbie", label: "新手上路", price: 0 },
-    { id: "earlybird", label: "早鳥常客", price: 60 },
-    { id: "rising_star", label: "球場新星", price: 100 },
-    { id: "swingking", label: "揮桿好手", price: 140 },
-    { id: "champion", label: "常勝軍", price: 180 },
-    { id: "overlord", label: "球場霸主", price: 220 },
-    { id: "hole_in_one", label: "一桿進洞王", price: 260 },
-    { id: "swing_god", label: "揮桿之神", price: 320 },
-    { id: "legend", label: "球場傳說", price: 380 },
-    { id: "golf_emperor", label: "高爾夫皇者", price: 450 },
-    { id: "immortal", label: "不朽傳奇", price: 550 },
+    { id: "newbie", label: "新手上路", price: 0, tier: 1 },
+    { id: "earlybird", label: "早鳥常客", price: 60, tier: 1 },
+    { id: "rising_star", label: "球場新星", price: 100, tier: 2 },
+    { id: "swingking", label: "揮桿好手", price: 140, tier: 2 },
+    { id: "champion", label: "常勝軍", price: 180, tier: 3 },
+    { id: "overlord", label: "球場霸主", price: 220, tier: 3 },
+    { id: "hole_in_one", label: "一桿進洞王", price: 260, tier: 4 },
+    { id: "swing_god", label: "揮桿之神", price: 320, tier: 4 },
+    { id: "legend", label: "球場傳說", price: 380, tier: 5 },
+    { id: "golf_emperor", label: "高爾夫皇者", price: 450, tier: 5 },
+    { id: "immortal", label: "不朽傳奇", price: 550, tier: 5 },
   ],
 };
 
@@ -447,14 +450,34 @@ function getCatalogFor(groupId) {
   return { frames: SHOP_CATALOG.frames, titles: SHOP_CATALOG.titles.concat(customTitles) };
 }
 
-function addCustomTitle(groupId, { id, label, price }) {
+// The id is an internal key only (never shown to the admin) — generated here
+// so the admin form only has to ask for the things that actually matter:
+// name, price, color tier.
+function addCustomTitle(groupId, { label, price, tier }) {
   const data = load();
   if (!data[groupId]) data[groupId] = {};
   if (!Array.isArray(data[groupId].customTitles)) data[groupId].customTitles = [];
-  const catalog = getCatalogFor(groupId);
-  if (catalog.titles.some((t) => t.id === id)) return { ok: false, error: "id already exists" };
 
-  data[groupId].customTitles.push({ id, label, price: Math.max(0, Number(price) || 0) });
+  const id = `custom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+  data[groupId].customTitles.push({
+    id,
+    label,
+    price: Math.max(0, Number(price) || 0),
+    tier: Math.min(5, Math.max(1, Number(tier) || 1)),
+  });
+  save(data);
+  return { ok: true, catalog: getCatalogFor(groupId) };
+}
+
+// Only removes admin-added titles — the built-in catalog is fixed in code.
+// Anyone with it equipped just falls back to no title (titleLabelFor finds
+// no matching catalog entry and renders nothing) rather than erroring.
+function deleteCustomTitle(groupId, id) {
+  const data = load();
+  const customTitles = (data[groupId] && data[groupId].customTitles) || [];
+  if (!customTitles.some((t) => t.id === id)) return { ok: false, error: "not found" };
+
+  data[groupId].customTitles = customTitles.filter((t) => t.id !== id);
   save(data);
   return { ok: true, catalog: getCatalogFor(groupId) };
 }
@@ -522,6 +545,7 @@ module.exports = {
   getProfiles,
   getCatalogFor,
   addCustomTitle,
+  deleteCustomTitle,
   purchaseItem,
   equipItem,
   adminDeleteSession,

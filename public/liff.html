@@ -92,8 +92,7 @@ h1 {
 .month-nav:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
 .month-nav:disabled { opacity: 0.35; cursor: not-allowed; }
 
-.header-right { display: flex; align-items: center; gap: 8px; }
-.bell-wrap { position: relative; }
+.header-right { display: flex; align-items: center; gap: 8px; position: relative; }
 .bell-btn {
   position: relative; background: none; border: none; font-size: 18px; cursor: pointer;
   padding: 6px 8px; border-radius: 999px; line-height: 1;
@@ -133,6 +132,12 @@ h1 {
 .account-menu button:hover { background: var(--surface-2); }
 
 .tabs { display: flex; gap: 6px; margin: 18px 0 20px; border-bottom: 1px solid var(--border); }
+.tabs[hidden] { display: none; }
+.back-btn {
+  display: inline-flex; align-items: center; gap: 4px; font-family: inherit; font-weight: 600; font-size: 13px;
+  color: var(--accent-strong); background: none; border: none; cursor: pointer; padding: 10px 0 16px;
+}
+.back-btn:hover { text-decoration: underline; }
 .tab-btn {
   font-family: inherit; font-size: 14px; font-weight: 500; padding: 10px 4px; margin-bottom: -1px;
   background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); cursor: pointer;
@@ -263,6 +268,8 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; 
 .item-card button:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
 .item-card button.equipped { background: var(--accent); border-color: var(--accent); color: #fff; cursor: default; }
 .item-card button:disabled { opacity: 0.6; cursor: not-allowed; }
+.item-card button.danger { border-color: var(--border); color: var(--muted); margin-top: -2px; }
+.item-card button.danger:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-soft); }
 .copy-btn {
   flex-shrink: 0; font-family: inherit; font-weight: 500; font-size: 12px;
   padding: 7px 12px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2);
@@ -340,11 +347,11 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; 
 .sheet h3 { font-family: "Zen Maru Gothic", sans-serif; font-size: 16px; font-weight: 500; margin: 0 0 4px; }
 .sheet .sheet-sub { font-size: 12px; color: var(--muted); margin: 0 0 18px; }
 .session-fields { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
-.session-fields input {
+.session-fields input, .session-fields select {
   font-family: inherit; font-size: 14px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
   background: var(--surface-2); color: var(--text); outline: none; width: 100%; transition: border-color 0.15s ease;
 }
-.session-fields input:focus { border-color: var(--accent); background: var(--surface); }
+.session-fields input:focus, .session-fields select:focus { border-color: var(--accent); background: var(--surface); }
 .session-fields input::placeholder { color: var(--muted); }
 .stepper { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 20px; }
 .stepper button {
@@ -483,6 +490,8 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       <div class="account">
         <button type="button" class="me" id="me-box">連接 LINE 中…</button>
         <div class="account-menu" id="account-menu">
+          <button type="button" id="menu-shop-btn">裝扮商店</button>
+          <button type="button" id="menu-guide-btn">使用說明</button>
           <button type="button" id="logout-btn">登出 / 切換帳號</button>
           <button type="button" id="admin-btn">管理員</button>
         </div>
@@ -490,14 +499,12 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     </div>
   </header>
 
-  <div class="tabs">
+  <div class="tabs" id="main-tabs">
     <button type="button" class="tab-btn active" id="tab-signup">報名球局</button>
     <button type="button" class="tab-btn" id="tab-my">我的報名</button>
     <button type="button" class="tab-btn" id="tab-board">留言板</button>
     <button type="button" class="tab-btn" id="tab-honor">榮譽榜</button>
     <button type="button" class="tab-btn" id="tab-friend">好友度</button>
-    <button type="button" class="tab-btn" id="tab-shop">裝扮商店</button>
-    <button type="button" class="tab-btn" id="tab-guide">使用說明</button>
   </div>
 
   <p class="status-line"><span class="dot" id="conn-dot"></span><span id="conn-text">連線中…</span></p>
@@ -566,6 +573,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   </div>
 
   <div class="view" id="view-shop">
+    <button type="button" class="back-btn" id="shop-back-btn">‹ 返回</button>
     <section class="summary">
       <div class="summary-head">
         <div>
@@ -593,9 +601,15 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       <div class="shop-section" id="admin-title-form" hidden>
         <h3>管理員：新增稱號</h3>
         <div class="session-fields">
-          <input type="text" id="admin-title-id" placeholder="代碼（英文/數字，不重複）" maxlength="20" />
           <input type="text" id="admin-title-label" placeholder="稱號名稱" maxlength="20" />
           <input type="number" id="admin-title-price" placeholder="解鎖點數" min="0" value="100" />
+          <select id="admin-title-tier">
+            <option value="1">灰・入門</option>
+            <option value="2">綠・常客</option>
+            <option value="3">藍・資深</option>
+            <option value="4">紫・元老</option>
+            <option value="5">金・傳說</option>
+          </select>
         </div>
         <div class="sheet-actions">
           <button type="button" class="primary" id="admin-title-submit">新增稱號</button>
@@ -605,6 +619,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   </div>
 
   <div class="view" id="view-guide">
+    <button type="button" class="back-btn" id="guide-back-btn">‹ 返回</button>
     <section class="summary">
       <h2>⛳ 報名球局</h2>
 
@@ -772,25 +787,41 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   const cycleLabel = document.getElementById("cycle-label");
 
   // ---- tabs ----
+  // 裝扮商店 and 使用說明 aren't in the main tab bar — they open from the
+  // account menu as standalone pages (tab bar hidden, a back button
+  // returns to whichever main tab was open before).
   const tabs = {
     signup: { btn: document.getElementById("tab-signup"), view: document.getElementById("view-signup") },
     my: { btn: document.getElementById("tab-my"), view: document.getElementById("view-my") },
     board: { btn: document.getElementById("tab-board"), view: document.getElementById("view-board") },
     honor: { btn: document.getElementById("tab-honor"), view: document.getElementById("view-honor") },
     friend: { btn: document.getElementById("tab-friend"), view: document.getElementById("view-friend") },
-    shop: { btn: document.getElementById("tab-shop"), view: document.getElementById("view-shop") },
-    guide: { btn: document.getElementById("tab-guide"), view: document.getElementById("view-guide") },
+    shop: { btn: null, view: document.getElementById("view-shop") },
+    guide: { btn: null, view: document.getElementById("view-guide") },
   };
-  Object.keys(tabs).forEach((name) => tabs[name].btn.addEventListener("click", () => switchTab(name)));
+  const STANDALONE_PAGES = ["shop", "guide"];
+  const mainTabsEl = document.getElementById("main-tabs");
+  let lastMainTab = "signup";
+
+  Object.keys(tabs).forEach((name) => {
+    if (tabs[name].btn) tabs[name].btn.addEventListener("click", () => switchTab(name));
+  });
   function switchTab(active) {
+    if (!STANDALONE_PAGES.includes(active)) lastMainTab = active;
     Object.keys(tabs).forEach((name) => {
-      tabs[name].btn.classList.toggle("active", name === active);
+      if (tabs[name].btn) tabs[name].btn.classList.toggle("active", name === active);
       tabs[name].view.classList.toggle("active", name === active);
     });
+    mainTabsEl.hidden = STANDALONE_PAGES.includes(active);
     if (active === "board") loadBoard();
     if (active === "honor" || active === "friend") loadStats();
     if (active === "shop") loadShop();
   }
+
+  document.getElementById("menu-shop-btn").addEventListener("click", () => { accountMenu.classList.remove("open"); switchTab("shop"); });
+  document.getElementById("menu-guide-btn").addEventListener("click", () => { accountMenu.classList.remove("open"); switchTab("guide"); });
+  document.getElementById("shop-back-btn").addEventListener("click", () => switchTab(lastMainTab));
+  document.getElementById("guide-back-btn").addEventListener("click", () => switchTab(lastMainTab));
 
   // ---- account menu ----
   const accountMenu = document.getElementById("account-menu");
@@ -869,19 +900,28 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     } catch (e) {}
   }
 
+  async function adminDeleteTitle(id) {
+    try {
+      const res = await fetch("/api/admin/titles/delete", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: adminPassword, groupId, id }),
+      });
+      if (res.ok) await loadShop();
+    } catch (e) {}
+  }
+
   document.getElementById("admin-title-submit").addEventListener("click", async () => {
-    const id = document.getElementById("admin-title-id").value.trim();
     const label = document.getElementById("admin-title-label").value.trim();
     const price = document.getElementById("admin-title-price").value;
-    if (!id || !label) return alert("代碼跟名稱都要填");
+    const tier = document.getElementById("admin-title-tier").value;
+    if (!label) return alert("請填稱號名稱");
     try {
       const res = await fetch("/api/admin/titles/add", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: adminPassword, groupId, id, label, price }),
+        body: JSON.stringify({ password: adminPassword, groupId, label, price, tier }),
       });
       const data = await res.json();
       if (res.ok) {
-        document.getElementById("admin-title-id").value = "";
         document.getElementById("admin-title-label").value = "";
         await loadShop();
       } else {
@@ -1542,7 +1582,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       const data = await res.json();
       boardMessages = data.messages || [];
       boardLoaded = true;
-      if (!statsData || !profilesData) await loadStatsAndProfilesOnly(); // for avatar frame + title tag
+      await loadStatsAndProfilesOnly(); // refetch every time so a newly-equipped frame/title shows up right away
       renderBoard();
     } catch (e) {}
   }
@@ -1557,6 +1597,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       ]);
       statsData = await statsRes.json();
       profilesData = await profilesRes.json();
+      refreshHeaderAvatar();
     } catch (e) {}
   }
 
@@ -1744,12 +1785,17 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   // preview) is whatever frame that person has equipped in 裝扮商店 — defaults
   // to grey until they buy/equip something else. This is the one rule that
   // decides "what color ring shows around this person's photo."
-  const FRAME_TIER_ID = { grey: 1, green: 2, blue: 3, purple: 4, gold: 5 };
+  // Every catalog entry (built-in or admin-added) carries its own `tier`
+  // (1-5), so color lookups never need a separate hardcoded id->tier map.
+  function tierOfItem(catalogList, id) {
+    const item = (catalogList || []).find((i) => i.id === id);
+    return item ? item.tier : 1;
+  }
   function frameTierIdFor(lineUserId) {
     if (!profilesData || !lineUserId) return 1;
     const profile = profilesData.profiles[lineUserId];
     const frameId = profile && profile.equipped && profile.equipped.frame;
-    return FRAME_TIER_ID[frameId] || 1;
+    return tierOfItem(profilesData.catalog && profilesData.catalog.frames, frameId);
   }
 
   // Rebuilds the header's own avatar+name — called on init and again after
@@ -1776,6 +1822,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       ]);
       statsData = await statsRes.json();
       profilesData = await profilesRes.json();
+      refreshHeaderAvatar();
     } catch (e) {
       statsData = null; profilesData = null;
     }
@@ -1888,40 +1935,35 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     document.getElementById("admin-title-form").hidden = !isAdmin;
     document.getElementById("shop-points").textContent = `⛳ ${profile.points} 點`;
     document.getElementById("shop-name").textContent = meDisplayName || "—";
-    const frameTierId = FRAME_TIER_ID[profile.equipped.frame] || 1;
+    const frameTierId = tierOfItem(catalog.frames, profile.equipped.frame);
     const slot = document.getElementById("shop-avatar-slot");
     slot.innerHTML = "";
     slot.appendChild(buildAvatar(mePictureUrl, (meDisplayName || "?").slice(0, 2), frameTierId));
 
     const titleItem = catalog.titles.find((t) => t.id === profile.equipped.title);
     const titlePill = document.getElementById("shop-title-pill");
-    const titleTierId = TITLE_TIER_ID[profile.equipped.title] || 1;
+    const titleTierId = titleItem ? titleItem.tier : 1;
     titlePill.textContent = titleItem ? titleItem.label : "";
     titlePill.style.background = `var(--tier-${titleTierId}-soft)`;
     titlePill.style.color = `var(--tier-${titleTierId})`;
 
-    renderShopGrid("shop-frames", "frames", catalog.frames, profile, (id) => `var(--tier-${FRAME_TIER_ID[id] || 1})`);
-    renderShopGrid("shop-titles", "titles", catalog.titles, profile, null);
+    renderShopGrid("shop-frames", "frames", catalog.frames, profile);
+    renderShopGrid("shop-titles", "titles", catalog.titles, profile);
   }
 
-  const TITLE_TIER_ID = {
-    newbie: 1, earlybird: 1, rising_star: 2, swingking: 2, champion: 3, overlord: 3,
-    hole_in_one: 4, swing_god: 4, legend: 5, golf_emperor: 5, immortal: 5,
-  };
-
-  function renderShopGrid(containerId, itemType, items, profile, frameColorFn) {
+  function renderShopGrid(containerId, itemType, items, profile) {
     const el = document.getElementById(containerId);
     el.innerHTML = "";
     items.forEach((item) => {
       const unlocked = profile.unlocked[itemType].includes(item.id);
       const equipped = profile.equipped[itemType] === item.id;
+      const tierId = item.tier || 1;
 
       const card = document.createElement("div"); card.className = "item-card" + (unlocked ? "" : " locked");
       const swatch = document.createElement("div");
       if (itemType === "frames") {
-        swatch.className = "swatch"; swatch.style.borderColor = frameColorFn(item.id);
+        swatch.className = "swatch"; swatch.style.borderColor = `var(--tier-${tierId})`;
       } else {
-        const tierId = TITLE_TIER_ID[item.id] || 1;
         swatch.className = "swatch title-swatch";
         swatch.style.background = `var(--tier-${tierId}-soft)`; swatch.style.color = `var(--tier-${tierId})`;
         swatch.textContent = item.label;
@@ -1943,6 +1985,19 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       }
 
       card.appendChild(swatch); card.appendChild(name); card.appendChild(price); card.appendChild(btn);
+
+      // Admin can remove a title they added (custom ids only — built-ins are
+      // fixed in code, identifiable by not starting with "custom_").
+      if (isAdmin && itemType === "titles" && item.id.startsWith("custom_")) {
+        const delBtn = document.createElement("button"); delBtn.type = "button"; delBtn.className = "danger";
+        delBtn.textContent = "管理員刪除";
+        delBtn.addEventListener("click", async () => {
+          if (!confirm(`確定要刪除稱號「${item.label}」嗎？`)) return;
+          await adminDeleteTitle(item.id);
+        });
+        card.appendChild(delBtn);
+      }
+
       el.appendChild(card);
     });
   }
@@ -2026,6 +2081,8 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     pollTimer = setInterval(() => {
       loadState({ silent: true });
       if (tabs.board.view.classList.contains("active")) loadBoard();
+      if (tabs.honor.view.classList.contains("active") || tabs.friend.view.classList.contains("active")) loadStats();
+      if (tabs.shop.view.classList.contains("active")) loadShop();
       loadActivity(); // keeps the bell badge current regardless of which tab is open
     }, 4000);
   }
