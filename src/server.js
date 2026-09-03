@@ -101,6 +101,7 @@ app.post("/api/vote", async (req, res) => {
   const monthData = setVote(groupId, month, date, sessionId, {
     lineUserId: identity.lineUserId,
     displayName: identity.displayName,
+    pictureUrl: identity.pictureUrl,
     count: parsedCount,
     guestNames: parsedGuestNames,
   });

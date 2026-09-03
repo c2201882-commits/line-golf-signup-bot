@@ -193,7 +193,7 @@ function addSession(groupId, mKey, dateKey, { course, teeTime } = {}) {
 // person is signing up alongside themselves. Nobody can delete a session
 // directly — once everyone has left it (no entries remain), it's removed
 // automatically here.
-function setVote(groupId, mKey, dateKey, sessionId, { lineUserId, displayName, count, guestNames }) {
+function setVote(groupId, mKey, dateKey, sessionId, { lineUserId, displayName, pictureUrl, count, guestNames }) {
   const data = load();
   if (!data[groupId]) data[groupId] = {};
   if (!data[groupId][mKey]) data[groupId][mKey] = { days: {} };
@@ -207,7 +207,7 @@ function setVote(groupId, mKey, dateKey, sessionId, { lineUserId, displayName, c
     delete session.entries[key];
     if (hadEntry) pushActivity(data, groupId, { type: "leave", displayName, detail: shortDate(dateKey) });
   } else {
-    session.entries[key] = { displayName, count, guestNames: guestNames || [], updatedAt: Date.now() };
+    session.entries[key] = { displayName, pictureUrl: pictureUrl || null, count, guestNames: guestNames || [], updatedAt: Date.now() };
     pushActivity(data, groupId, { type: "join", displayName, detail: shortDate(dateKey) });
   }
 
@@ -334,28 +334,36 @@ function getStats(groupId) {
   sessions.forEach((session) => {
     const participants = Object.entries(session.entries || {})
       .filter(([key]) => key.startsWith("line:"))
-      .map(([key, e]) => ({ id: key.slice(5), displayName: e.displayName }));
+      .map(([key, e]) => ({ id: key.slice(5), displayName: e.displayName, pictureUrl: e.pictureUrl || null }));
 
     participants.forEach((p) => {
-      if (!counts[p.id]) counts[p.id] = { displayName: p.displayName, count: 0 };
+      if (!counts[p.id]) counts[p.id] = { displayName: p.displayName, pictureUrl: p.pictureUrl, count: 0 };
       counts[p.id].count += 1;
       counts[p.id].displayName = p.displayName;
+      if (p.pictureUrl) counts[p.id].pictureUrl = p.pictureUrl;
     });
 
     for (let i = 0; i < participants.length; i++) {
       for (let j = i + 1; j < participants.length; j++) {
         const [a, b] = [participants[i], participants[j]].sort((x, y) => (x.id < y.id ? -1 : 1));
         const key = `${a.id}|${b.id}`;
-        if (!pairCounts[key]) pairCounts[key] = { aId: a.id, bId: b.id, aName: a.displayName, bName: b.displayName, count: 0 };
+        if (!pairCounts[key]) {
+          pairCounts[key] = {
+            aId: a.id, bId: b.id, aName: a.displayName, bName: b.displayName,
+            aPictureUrl: a.pictureUrl, bPictureUrl: b.pictureUrl, count: 0,
+          };
+        }
         pairCounts[key].count += 1;
         pairCounts[key].aName = a.displayName;
         pairCounts[key].bName = b.displayName;
+        if (a.pictureUrl) pairCounts[key].aPictureUrl = a.pictureUrl;
+        if (b.pictureUrl) pairCounts[key].bPictureUrl = b.pictureUrl;
       }
     }
   });
 
   const leaderboard = Object.entries(counts)
-    .map(([lineUserId, v]) => ({ lineUserId, displayName: v.displayName, count: v.count }))
+    .map(([lineUserId, v]) => ({ lineUserId, displayName: v.displayName, pictureUrl: v.pictureUrl || null, count: v.count }))
     .sort((a, b) => b.count - a.count);
 
   const pairs = Object.values(pairCounts).sort((a, b) => b.count - a.count);

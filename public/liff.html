@@ -182,6 +182,10 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; 
 .rank-row .badge-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .rank-row .row-name { flex: 1; font-size: 13.5px; font-weight: 500; min-width: 0; overflow-wrap: anywhere; }
 .rank-row .row-name .link-sep { color: var(--muted); margin: 0 3px; font-size: 11px; }
+.rank-row .row-name .row-title-tag {
+  display: inline-block; margin-left: 6px; font-size: 10.5px; font-weight: 600; color: var(--accent-strong);
+  background: var(--accent-soft); border-radius: 999px; padding: 1px 8px; vertical-align: middle;
+}
 .rank-row .count { font-family: "Zen Maru Gothic", sans-serif; font-weight: 600; font-size: 13px; color: var(--text); flex-shrink: 0; }
 
 /* shop */
@@ -1415,14 +1419,24 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     return next ? next.min - count : null;
   }
 
-  // Built with DOM nodes (never innerHTML) since names come from LINE
-  // profiles — untrusted text.
-  function buildHeroCard({ tierId, initials, label, name, subText, pillText }) {
-    const card = document.createElement("div"); card.className = "hero-card";
+  // Built with DOM nodes (never innerHTML) since names/pictures come from
+  // LINE profiles — untrusted text and a URL, neither ever parsed as markup.
+  function buildAvatar(pictureUrl, initials, tierId) {
     const frame = document.createElement("div"); frame.className = "avatar-frame";
     frame.style.borderColor = `var(--tier-${tierId})`;
-    const initEl = document.createElement("span"); initEl.className = "initials"; initEl.textContent = initials;
-    frame.appendChild(initEl);
+    if (pictureUrl) {
+      const img = document.createElement("img"); img.src = pictureUrl; img.alt = "";
+      frame.appendChild(img);
+    } else {
+      const initEl = document.createElement("span"); initEl.className = "initials"; initEl.textContent = initials;
+      frame.appendChild(initEl);
+    }
+    return frame;
+  }
+
+  function buildHeroCard({ tierId, pictureUrl, initials, label, name, subText, pillText }) {
+    const card = document.createElement("div"); card.className = "hero-card";
+    card.appendChild(buildAvatar(pictureUrl, initials, tierId));
 
     const info = document.createElement("div"); info.className = "info";
     const labelEl = document.createElement("div"); labelEl.className = "label"; labelEl.textContent = label;
@@ -1434,32 +1448,59 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     pill.style.background = `var(--tier-${tierId}-soft)`; pill.style.color = `var(--tier-${tierId})`;
     pill.textContent = pillText;
 
-    card.appendChild(frame); card.appendChild(info); card.appendChild(pill);
+    card.appendChild(info); card.appendChild(pill);
     return card;
   }
 
-  function buildRankRow(rankNum, tierId, name, tierLabel, countText) {
+  // titleLabel is the person's equipped 裝扮商店 title (may be empty if they
+  // haven't set one) — shown right after their name, separate from the tier
+  // pill which reflects their automatic sign-up-count achievement.
+  function buildRankRow(rankNum, tierId, pictureUrl, initials, name, tierLabel, countText, titleLabel) {
     const row = document.createElement("div");
     row.className = "rank-row" + (rankNum === 1 ? " top1" : rankNum === 2 ? " top2" : "");
     const rank = document.createElement("div"); rank.className = "rank"; rank.textContent = rankNum;
-    const dot = document.createElement("span"); dot.className = "badge-dot"; dot.style.background = `var(--tier-${tierId})`;
+
+    const avatarWrap = document.createElement("div");
+    avatarWrap.style.width = "30px"; avatarWrap.style.height = "30px"; avatarWrap.style.flexShrink = "0";
+    const avatar = buildAvatar(pictureUrl, initials, tierId);
+    avatar.style.width = "30px"; avatar.style.height = "30px"; avatar.style.borderWidth = "2px";
+    avatar.querySelector(".initials") && (avatar.querySelector(".initials").style.fontSize = "10px");
+    avatarWrap.appendChild(avatar);
+
     const nameEl = document.createElement("div"); nameEl.className = "row-name"; nameEl.textContent = name;
+    if (titleLabel) {
+      const titleTag = document.createElement("span"); titleTag.className = "row-title-tag"; titleTag.textContent = titleLabel;
+      nameEl.appendChild(titleTag);
+    }
     const pill = document.createElement("span"); pill.className = "tier-pill";
     pill.style.background = `var(--tier-${tierId}-soft)`; pill.style.color = `var(--tier-${tierId})`;
     pill.textContent = tierLabel;
     const count = document.createElement("div"); count.className = "count"; count.textContent = countText;
-    row.appendChild(rank); row.appendChild(dot); row.appendChild(nameEl); row.appendChild(pill); row.appendChild(count);
+    row.appendChild(rank); row.appendChild(avatarWrap); row.appendChild(nameEl); row.appendChild(pill); row.appendChild(count);
     return row;
   }
 
   let statsData = null;
+  let profilesData = null;
+
+  function titleLabelFor(lineUserId) {
+    if (!profilesData || !lineUserId) return "";
+    const profile = profilesData.profiles[lineUserId];
+    if (!profile || !profile.equipped.title) return "";
+    const item = (profilesData.catalog.titles || []).find((t) => t.id === profile.equipped.title);
+    return item ? item.label : "";
+  }
 
   async function loadStats() {
     try {
-      const res = await fetch(`/api/stats?groupId=${encodeURIComponent(groupId)}`);
-      statsData = await res.json();
+      const [statsRes, profilesRes] = await Promise.all([
+        fetch(`/api/stats?groupId=${encodeURIComponent(groupId)}`),
+        fetch(`/api/profiles?groupId=${encodeURIComponent(groupId)}`),
+      ]);
+      statsData = await statsRes.json();
+      profilesData = await profilesRes.json();
     } catch (e) {
-      statsData = null;
+      statsData = null; profilesData = null;
     }
     renderHonor();
     renderFriend();
@@ -1482,6 +1523,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       const gap = nextTierGap(mine.count);
       meEl.appendChild(buildHeroCard({
         tierId: tier.id,
+        pictureUrl: mine.pictureUrl,
         initials: (mine.displayName || "?").slice(0, 2),
         label: `你的排名 #${myIndex + 1}`,
         name: mine.displayName,
@@ -1492,7 +1534,10 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
 
     board.forEach((b, i) => {
       const tier = tierForCount(b.count);
-      listEl.appendChild(buildRankRow(i + 1, tier.id, b.displayName, tier.label, `${b.count} 次`));
+      listEl.appendChild(buildRankRow(
+        i + 1, tier.id, b.pictureUrl, (b.displayName || "?").slice(0, 2),
+        b.displayName, tier.label, `${b.count} 次`, titleLabelFor(b.lineUserId)
+      ));
     });
   }
 
@@ -1510,9 +1555,11 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     if (myPairs.length > 0) {
       const best = myPairs[0];
       const partnerName = best.aId === myUserId ? best.bName : best.aName;
+      const partnerPicture = best.aId === myUserId ? best.bPictureUrl : best.aPictureUrl;
       const tierId = tierForCount(best.count).id;
       meEl.appendChild(buildHeroCard({
         tierId,
+        pictureUrl: partnerPicture,
         initials: (partnerName || "?").slice(0, 2),
         label: "你最麻吉的球友",
         name: partnerName,
@@ -1523,7 +1570,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
 
     pairs.forEach((p, i) => {
       const tierId = tierForCount(p.count).id;
-      const row = buildRankRow(i + 1, tierId, "", PAIR_TIER_LABELS[tierId], `${p.count} 次`);
+      const row = buildRankRow(i + 1, tierId, null, "", "", PAIR_TIER_LABELS[tierId], `${p.count} 次`, "");
       const nameEl = row.querySelector(".row-name");
       nameEl.textContent = p.aName;
       const sep = document.createElement("span"); sep.className = "link-sep"; sep.textContent = "⛳";
