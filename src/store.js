@@ -421,6 +421,21 @@ const SHOP_CATALOG = {
   ],
 };
 
+// Self-heals a profile saved by the earlier buggy equipItem, which wrote to
+// equipped.frames/equipped.titles (plural) instead of the singular
+// frame/title keys everything actually reads.
+function migrateProfileShape(profile) {
+  if (profile.equipped.frames !== undefined) {
+    profile.equipped.frame = profile.equipped.frames;
+    delete profile.equipped.frames;
+  }
+  if (profile.equipped.titles !== undefined) {
+    profile.equipped.title = profile.equipped.titles;
+    delete profile.equipped.titles;
+  }
+  return profile;
+}
+
 function ensureProfile(data, groupId, lineUserId, displayName) {
   if (!data[groupId]) data[groupId] = {};
   if (!data[groupId].profiles) data[groupId].profiles = {};
@@ -432,8 +447,9 @@ function ensureProfile(data, groupId, lineUserId, displayName) {
       equipped: { frame: "grey", title: "newbie" },
     };
   }
-  data[groupId].profiles[lineUserId].displayName = displayName;
-  return data[groupId].profiles[lineUserId];
+  const profile = data[groupId].profiles[lineUserId];
+  profile.displayName = displayName;
+  return migrateProfileShape(profile);
 }
 
 function earnedPoints(groupId, lineUserId) {
@@ -489,6 +505,7 @@ function getProfiles(groupId) {
   const { leaderboard } = getStats(groupId);
   const result = {};
   Object.keys(profiles).forEach((id) => {
+    migrateProfileShape(profiles[id]);
     const earned = (leaderboard.find((l) => l.lineUserId === id)?.count || 0) * POINTS_PER_JOIN;
     result[id] = { ...profiles[id], points: earned - profiles[id].spentPoints };
   });
@@ -513,13 +530,19 @@ function purchaseItem(groupId, lineUserId, displayName, itemType, itemId) {
   return { ok: true, profile };
 }
 
+// `unlocked` is keyed by the plural itemType ("frames"/"titles", matching the
+// catalog), but `equipped` is keyed by the singular concept ("frame"/"title")
+// — this map bridges the two so equipping actually writes to the field
+// everything else reads.
+const EQUIPPED_KEY = { frames: "frame", titles: "title" };
+
 function equipItem(groupId, lineUserId, displayName, itemType, itemId) {
   const data = load();
   const profile = ensureProfile(data, groupId, lineUserId, displayName);
   if (!profile.unlocked[itemType] || !profile.unlocked[itemType].includes(itemId)) {
     return { ok: false, error: "not unlocked" };
   }
-  profile.equipped[itemType] = itemId;
+  profile.equipped[EQUIPPED_KEY[itemType] || itemType] = itemId;
   save(data);
   return { ok: true, profile };
 }

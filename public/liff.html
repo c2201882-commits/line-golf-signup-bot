@@ -77,6 +77,13 @@ header.top {
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
   gap: 14px; margin-bottom: 4px;
 }
+/* On narrow screens the two halves wrap onto separate lines — put the
+   bell+account row first (above the date row) instead of letting it drop
+   below and crowd the month nav. */
+@media (max-width: 480px) {
+  header.top { flex-direction: column-reverse; align-items: stretch; gap: 10px; }
+  .header-right { justify-content: flex-end; }
+}
 .eyebrow { font-size: 12px; letter-spacing: 0.04em; color: var(--muted); margin: 0 0 4px; }
 .month-row { display: flex; align-items: center; gap: 10px; }
 h1 {
@@ -1962,7 +1969,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       const card = document.createElement("div"); card.className = "item-card" + (unlocked ? "" : " locked");
       const swatch = document.createElement("div");
       if (itemType === "frames") {
-        swatch.className = "swatch"; swatch.style.borderColor = `var(--tier-${tierId})`;
+        swatch.className = "swatch"; swatch.style.borderColor = `var(--tier-${tierId}-ring)`;
       } else {
         swatch.className = "swatch title-swatch";
         swatch.style.background = `var(--tier-${tierId}-soft)`; swatch.style.color = `var(--tier-${tierId})`;
