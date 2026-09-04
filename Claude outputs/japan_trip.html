@@ -1,0 +1,677 @@
+<title>日本高爾夫紀行</title>
+<style>
+:root{
+  --paper:#faf6ee;
+  --paper-raised:#fffdf8;
+  --ink:#2b2822;
+  --ink-soft:#6b6459;
+  --rule:#ded4c0;
+  --indigo:#2c3e63;
+  --indigo-soft:#e8ecf3;
+  --vermilion:#b5533c;
+  --vermilion-soft:#f6e6e0;
+  --moss:#6f7d5c;
+  --moss-soft:#e9edE2;
+  --shadow: 0 1px 2px rgba(43,40,34,.06), 0 6px 16px rgba(43,40,34,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#1c1a17;
+    --paper-raised:#26231f;
+    --ink:#eee7d9;
+    --ink-soft:#a89f8f;
+    --rule:#3c372f;
+    --indigo:#8fa3ce;
+    --indigo-soft:#28324a;
+    --vermilion:#e08468;
+    --vermilion-soft:#3a2620;
+    --moss:#a9bb8e;
+    --moss-soft:#2a2f22;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 20px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#1c1a17;
+  --paper-raised:#26231f;
+  --ink:#eee7d9;
+  --ink-soft:#a89f8f;
+  --rule:#3c372f;
+  --indigo:#8fa3ce;
+  --indigo-soft:#28324a;
+  --vermilion:#e08468;
+  --vermilion-soft:#3a2620;
+  --moss:#a9bb8e;
+  --moss-soft:#2a2f22;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 20px rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Noto Sans TC","Zen Kaku Gothic New",-apple-system,sans-serif;
+  line-height:1.6;
+}
+::selection{background:var(--indigo-soft);}
+
+h1,h2,h3{
+  font-family:"Noto Serif TC","Shippori Mincho",serif;
+  font-weight:700;
+  text-wrap:balance;
+  margin:0;
+}
+
+.wrap{
+  max-width:760px;
+  margin:0 auto;
+  padding:48px 24px 96px;
+}
+
+header.hero{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding-bottom:28px;
+  border-bottom:2px solid var(--ink);
+  margin-bottom:36px;
+}
+.eyebrow{
+  font-size:.78rem;
+  letter-spacing:.14em;
+  color:var(--ink-soft);
+  text-transform:uppercase;
+}
+h1{
+  font-size:2.15rem;
+  letter-spacing:.01em;
+}
+.hero-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 22px;
+  margin-top:6px;
+  font-size:.94rem;
+  color:var(--ink-soft);
+  font-variant-numeric:tabular-nums;
+}
+.hero-meta b{color:var(--ink); font-weight:600;}
+
+.edit-hint{
+  font-size:.82rem;
+  color:var(--ink-soft);
+  background:var(--paper-raised);
+  border:1px dashed var(--rule);
+  border-radius:8px;
+  padding:10px 14px;
+  margin-bottom:32px;
+}
+.edit-hint b{color:var(--indigo);}
+
+section{margin-bottom:44px;}
+.section-title{
+  font-size:1.3rem;
+  margin-bottom:16px;
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+}
+.section-title .cn{color:var(--ink);}
+.section-title .jp{
+  font-size:.85rem;
+  font-weight:400;
+  color:var(--ink-soft);
+  font-family:"Noto Sans TC",sans-serif;
+}
+
+/* Cost table */
+.cost-table{
+  width:100%;
+  border-collapse:collapse;
+  background:var(--paper-raised);
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:var(--shadow);
+  font-size:.92rem;
+}
+.cost-table th{
+  text-align:left;
+  font-size:.74rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--ink-soft);
+  font-weight:600;
+  padding:10px 14px;
+  border-bottom:1px solid var(--rule);
+}
+.cost-table td{
+  padding:11px 14px;
+  border-bottom:1px solid var(--rule);
+  vertical-align:top;
+}
+.cost-table tr:last-child td{border-bottom:none;}
+.cost-table tr:hover td{background:var(--indigo-soft);}
+.item-name{font-weight:600;}
+.amount{font-variant-numeric:tabular-nums; white-space:nowrap;}
+.payer-tag{
+  display:inline-block;
+  font-size:.78rem;
+  font-weight:600;
+  padding:2px 9px;
+  border-radius:999px;
+  background:var(--moss-soft);
+  color:var(--moss);
+}
+.payer-tag.tbd{background:var(--vermilion-soft); color:var(--vermilion);}
+[contenteditable="true"]{
+  outline:none;
+  border-radius:4px;
+  padding:1px 4px;
+  margin:-1px -4px;
+}
+[contenteditable="true"]:hover{background:var(--indigo-soft);}
+[contenteditable="true"]:focus{background:var(--paper); box-shadow:0 0 0 2px var(--indigo);}
+
+.cost-note{
+  font-size:.82rem;
+  color:var(--ink-soft);
+  margin-top:10px;
+}
+
+.cost-table a{
+  color:var(--indigo);
+  text-decoration:underline;
+  text-decoration-color:var(--rule);
+  text-underline-offset:2px;
+  cursor:pointer;
+}
+.cost-table a:hover{text-decoration-color:var(--indigo);}
+
+/* Timeline */
+.timeline{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.day{
+  display:grid;
+  grid-template-columns:64px 1fr;
+  gap:16px;
+  padding:16px 0;
+  border-bottom:1px solid var(--rule);
+}
+.day:last-child{border-bottom:none;}
+.day-date{
+  font-family:"Noto Serif TC",serif;
+  font-weight:700;
+  font-size:1.05rem;
+  color:var(--indigo);
+  padding-top:2px;
+}
+.day-date .month{
+  display:block;
+  font-size:.68rem;
+  font-weight:400;
+  letter-spacing:.08em;
+  color:var(--ink-soft);
+  text-transform:uppercase;
+}
+.day-body{min-width:0;}
+.day-title{
+  font-weight:600;
+  font-size:1rem;
+  margin-bottom:4px;
+}
+.day-tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:6px;
+}
+.tag{
+  font-size:.76rem;
+  padding:2px 9px;
+  border-radius:999px;
+  background:var(--indigo-soft);
+  color:var(--indigo);
+  font-weight:600;
+}
+.tag.golf{background:var(--moss-soft); color:var(--moss);}
+.tag.flight{background:var(--vermilion-soft); color:var(--vermilion);}
+.done{
+  font-size:.76rem;
+  color:var(--moss);
+  font-weight:600;
+}
+.day-detail{
+  color:var(--ink-soft);
+  font-size:.92rem;
+  margin-top:2px;
+}
+
+/* Category gantt */
+.gantt{
+  background:var(--paper-raised);
+  border-radius:10px;
+  box-shadow:var(--shadow);
+  padding:18px 18px 14px;
+  overflow-x:auto;
+}
+.gantt-grid{
+  display:grid;
+  grid-template-columns:76px repeat(8, minmax(56px,1fr));
+  min-width:600px;
+}
+.gantt-header{
+  display:contents;
+}
+.gantt-header .g-cell{
+  font-family:"Noto Serif TC",serif;
+  font-weight:700;
+  font-size:.86rem;
+  color:var(--ink);
+  text-align:center;
+  padding-bottom:10px;
+  border-bottom:2px solid var(--ink);
+}
+.gantt-header .g-cell .month{
+  display:block;
+  font-family:"Noto Sans TC",sans-serif;
+  font-weight:400;
+  font-size:.62rem;
+  letter-spacing:.06em;
+  color:var(--ink-soft);
+  text-transform:uppercase;
+}
+.gantt-header .g-cell:first-child{visibility:hidden;}
+.gantt-header .g-cell:not(:last-child),
+.g-track:not(:last-child){
+  border-right:1px dashed var(--rule);
+}
+.gantt-row{
+  display:contents;
+}
+.g-label{
+  font-size:.82rem;
+  font-weight:600;
+  color:var(--ink-soft);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:14px 6px 14px 0;
+  border-bottom:1px solid var(--rule);
+}
+.g-label .dot{
+  width:8px;height:8px;border-radius:50%;flex:none;
+}
+.g-track{
+  position:relative;
+  border-bottom:1px solid var(--rule);
+  padding:8px 2px;
+  min-height:44px;
+}
+.g-bar{
+  position:relative;
+  height:26px;
+  border-radius:7px;
+  display:flex;
+  align-items:center;
+  padding:0 9px;
+  font-size:.74rem;
+  font-weight:600;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  box-shadow:0 1px 2px rgba(43,40,34,.08);
+}
+.g-bar.lodging{background:var(--indigo-soft); color:var(--indigo); grid-row:1;}
+.g-bar.golf{background:var(--moss-soft); color:var(--moss);}
+.g-bar.flight{background:var(--vermilion-soft); color:var(--vermilion);}
+.g-bar.tbd{outline:1.5px dashed currentColor; outline-offset:-1.5px;}
+.gantt-legend{
+  display:flex;
+  gap:16px;
+  flex-wrap:wrap;
+  margin-top:14px;
+  font-size:.78rem;
+  color:var(--ink-soft);
+}
+.gantt-legend span{display:inline-flex; align-items:center; gap:6px;}
+.gantt-legend .dot{width:8px;height:8px;border-radius:50%;}
+
+footer{
+  margin-top:40px;
+  padding-top:18px;
+  border-top:1px solid var(--rule);
+  font-size:.78rem;
+  color:var(--ink-soft);
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+button#save-btn{
+  font-family:inherit;
+  font-size:.8rem;
+  font-weight:600;
+  color:var(--indigo);
+  background:var(--indigo-soft);
+  border:none;
+  border-radius:7px;
+  padding:7px 14px;
+  cursor:pointer;
+}
+button#save-btn:hover{filter:brightness(1.05);}
+button#save-btn:active{transform:translateY(1px);}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap">
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">TAIWAN → JAPAN · GOLF TRIP</div>
+    <h1>日本打球紀行</h1>
+    <div class="hero-meta">
+      <span><b>10/4 (日)</b> 08:30 出發</span>
+      <span>→</span>
+      <span><b>10/11 (日)</b> 16:20 返程</span>
+      <span>· 8 天 7 夜</span>
+      <span>· 3 場高爾夫</span>
+    </div>
+  </header>
+
+  <div class="edit-hint">
+    直接點一下 <b>金額</b>、<b>付款人</b>或任何文字即可修改，改完會自動存在這台裝置的瀏覽器裡。也可以按右下角「儲存為檔案」另存一份。
+  </div>
+
+  <section>
+    <div class="section-title"><span class="cn">費用總覽</span><span class="jp">費用一覧</span></div>
+    <table class="cost-table">
+      <thead>
+        <tr><th>項目</th><th>金額</th><th>付款人</th><th>備註</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="item-name">租車</td>
+          <td class="amount" contenteditable="true">NT$20,217</td>
+          <td><span class="payer-tag" contenteditable="true">Eric</span></td>
+          <td contenteditable="true"><a href="https://www.trip.com/t/QHk6EJ5B5S1" target="_blank" rel="noopener">BMW X3</a></td>
+        </tr>
+        <tr>
+          <td class="item-name">機票</td>
+          <td class="amount" contenteditable="true">NT$7,060</td>
+          <td><span class="payer-tag" contenteditable="true">Eric</span></td>
+          <td contenteditable="true">JX800 / JX803</td>
+        </tr>
+        <tr>
+          <td class="item-name">住宿 10/4–10/6</td>
+          <td class="amount" contenteditable="true">NT$6,947</td>
+          <td><span class="payer-tag" contenteditable="true">Ru</span></td>
+          <td contenteditable="true"><a href="https://maps.app.goo.gl/CNK9toDfvPcQ8Lag8?g_st=com.google.maps.preview.copy" target="_blank" rel="noopener">東京灣潮見王子大飯店</a>（hotels.com）</td>
+        </tr>
+        <tr>
+          <td class="item-name">住宿 10/6–10/7</td>
+          <td class="amount" contenteditable="true">¥85,000</td>
+          <td><span class="payer-tag tbd" contenteditable="true">TBD</span></td>
+          <td contenteditable="true"><a href="https://maps.app.goo.gl/fxDoVEdfoPRvHZyi9?g_st=com.google.maps.preview.copy" target="_blank" rel="noopener">オーソルヴェール軽井沢倶楽部</a>（email 訂房）</td>
+        </tr>
+        <tr>
+          <td class="item-name">高爾夫 10/7 09:15</td>
+          <td class="amount" contenteditable="true">¥33,500</td>
+          <td><span class="payer-tag tbd" contenteditable="true">TBD</span></td>
+          <td contenteditable="true"><a href="https://maps.app.goo.gl/fxDoVEdfoPRvHZyi9?g_st=com.google.maps.preview.copy" target="_blank" rel="noopener">オーソルヴェール軽井沢倶楽部</a>（email）</td>
+        </tr>
+        <tr>
+          <td class="item-name">住宿 10/7–10/8</td>
+          <td class="amount" contenteditable="true">NT$4,534</td>
+          <td><span class="payer-tag" contenteditable="true">Ru</span></td>
+          <td contenteditable="true"><a href="https://maps.app.goo.gl/UFDRcCJRi3xpisAT8?g_st=com.google.maps.preview.copy" target="_blank" rel="noopener">輕井澤陽光村</a>（trip.com）</td>
+        </tr>
+        <tr>
+          <td class="item-name">住宿 10/8–10/10（富士山）</td>
+          <td class="amount" contenteditable="true">NT$8,119</td>
+          <td><span class="payer-tag tbd" contenteditable="true">TBD</span></td>
+          <td contenteditable="true"><a href="https://maps.app.goo.gl/njmVMrLFBKD49UaPA?g_st=ic" target="_blank" rel="noopener">Ginkgo House ギンコハウス</a>（booking.com）</td>
+        </tr>
+        <tr>
+          <td class="item-name">高爾夫 10/9 08:59</td>
+          <td class="amount" contenteditable="true">¥27,520</td>
+          <td><span class="payer-tag tbd" contenteditable="true">TBD</span></td>
+          <td contenteditable="true"><a href="https://manager.gora.golf.rakuten.co.jp/?menu=share_information&act=top&appl_id=93599776&hash=af0580833e1eac40254efd5cfc0e89c4170e7ca4c7b8c9bbbcb10c04f1f73ed5" target="_blank" rel="noopener">GATSBY GOLF CLUB</a></td>
+        </tr>
+        <tr>
+          <td class="item-name">高爾夫 10/10 07:00</td>
+          <td class="amount" contenteditable="true">¥49,300</td>
+          <td><span class="payer-tag tbd" contenteditable="true">TBD</span></td>
+          <td contenteditable="true"><a href="https://manager.gora.golf.rakuten.co.jp/?menu=share_information&act=top&appl_id=94185273&hash=d737c212980ebba19e22ab234f1dc13a47c28f6c5d690295d13d96facceed933" target="_blank" rel="noopener">三甲ゴルフ倶楽部 富士コース</a></td>
+        </tr>
+        <tr>
+          <td class="item-name">住宿 10/10–10/11（東京）</td>
+          <td class="amount" contenteditable="true">??</td>
+          <td><span class="payer-tag tbd" contenteditable="true">TBD</span></td>
+          <td contenteditable="true"><a href="https://maps.app.goo.gl/gRkxiprYNCXe3esF8?g_st=com.google.maps.preview.copy" target="_blank" rel="noopener">KOKO HOTEL Premier 東京ベイ幕張</a></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="cost-note">點金額或付款人欄位可直接編輯；金額未定的項目先留 TBD，之後回填即可。</div>
+  </section>
+
+  <section>
+    <div class="section-title"><span class="cn">每日行程</span><span class="jp">日程表</span></div>
+    <div class="timeline">
+
+      <div class="day">
+        <div class="day-date">10/4<span class="month">SUN · 日</span></div>
+        <div class="day-body">
+          <div class="day-title" contenteditable="true">🇹🇼 桃園 08:30 → 🇯🇵 成田 12:55</div>
+          <div class="day-tags">
+            <span class="tag flight">✈️ JX800 · T1 → T2</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="day">
+        <div class="day-date">10/5<span class="month">MON · 一</span></div>
+        <div class="day-body">
+          <div class="day-title" contenteditable="true">看日本隊足球</div>
+        </div>
+      </div>
+
+      <div class="day">
+        <div class="day-date">10/6<span class="month">TUE · 二</span></div>
+        <div class="day-body">
+          <div class="day-title" contenteditable="true">住輕井澤史奴比</div>
+          <div class="day-tags">
+            <span class="tag">🏨 已訂</span>
+            <span class="done">✅ 已確認</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="day">
+        <div class="day-date">10/7<span class="month">WED · 三</span></div>
+        <div class="day-body">
+          <div class="day-title" contenteditable="true">史努比球場 ⛳️ · 住輕井澤</div>
+          <div class="day-tags">
+            <span class="tag golf">⛳ 09:15 開球</span>
+            <span class="done">✅ 已確認</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="day">
+        <div class="day-date">10/8<span class="month">THU · 四</span></div>
+        <div class="day-body">
+          <div class="day-title" contenteditable="true">住富士山</div>
+          <div class="day-tags">
+            <span class="tag">🏨 Ginkgo House</span>
+            <span class="done">✅ 已確認</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="day">
+        <div class="day-date">10/9<span class="month">FRI · 五</span></div>
+        <div class="day-body">
+          <div class="day-title" contenteditable="true">Gatsby Golf Club ⛳️ · 住富士山</div>
+          <div class="day-tags">
+            <span class="tag golf">⛳ 08:59 開球</span>
+            <span class="done">✅ 已確認</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="day">
+        <div class="day-date">10/10<span class="month">SAT · 六</span></div>
+        <div class="day-body">
+          <div class="day-title" contenteditable="true">三甲ゴルフ倶楽部 ⛳️ · 住東京</div>
+          <div class="day-tags">
+            <span class="tag golf">⛳ 07:00 開球</span>
+            <span class="done">✅ 已確認</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="day">
+        <div class="day-date">10/11<span class="month">SUN · 日</span></div>
+        <div class="day-body">
+          <div class="day-title" contenteditable="true">🇯🇵 成田 16:20 → 🇹🇼 桃園 19:00</div>
+          <div class="day-tags">
+            <span class="tag flight">✈️ JX803 · T2 → T1</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title"><span class="cn">分類時間軸</span><span class="jp">カテゴリ別</span></div>
+    <div class="gantt">
+      <div class="gantt-grid">
+
+        <div class="gantt-header">
+          <div class="g-cell"></div>
+          <div class="g-cell">4<span class="month">日</span></div>
+          <div class="g-cell">5<span class="month">一</span></div>
+          <div class="g-cell">6<span class="month">二</span></div>
+          <div class="g-cell">7<span class="month">三</span></div>
+          <div class="g-cell">8<span class="month">四</span></div>
+          <div class="g-cell">9<span class="month">五</span></div>
+          <div class="g-cell">10<span class="month">六</span></div>
+          <div class="g-cell">11<span class="month">日</span></div>
+        </div>
+
+        <div class="gantt-row">
+          <div class="g-label"><span class="dot" style="background:var(--vermilion)"></span>交通</div>
+          <div class="g-track" style="grid-column:2/3;">
+            <div class="g-bar flight" title="JX800 桃園08:30→成田12:55">JX800 →</div>
+          </div>
+          <div class="g-track" style="grid-column:3/4;"></div>
+          <div class="g-track" style="grid-column:4/5;"></div>
+          <div class="g-track" style="grid-column:5/6;"></div>
+          <div class="g-track" style="grid-column:6/7;"></div>
+          <div class="g-track" style="grid-column:7/8;"></div>
+          <div class="g-track" style="grid-column:8/9;"></div>
+          <div class="g-track" style="grid-column:9/10;">
+            <div class="g-bar flight" title="JX803 成田16:20→桃園19:00">← JX803</div>
+          </div>
+        </div>
+
+        <div class="gantt-row">
+          <div class="g-label"><span class="dot" style="background:var(--indigo)"></span>住宿</div>
+          <div class="g-track" style="grid-column:2/4;">
+            <div class="g-bar lodging" title="東京灣潮見王子大飯店 10/4–10/6">東京灣潮見王子</div>
+          </div>
+          <div class="g-track" style="grid-column:4/5;">
+            <div class="g-bar lodging tbd" title="オーソルヴェール軽井沢倶楽部 10/6–10/7 · 付款人 TBD">輕井澤倶楽部</div>
+          </div>
+          <div class="g-track" style="grid-column:5/6;">
+            <div class="g-bar lodging" title="輕井澤陽光村 10/7–10/8">陽光村</div>
+          </div>
+          <div class="g-track" style="grid-column:6/8;">
+            <div class="g-bar lodging tbd" title="Ginkgo House 10/8–10/10 · 付款人 TBD">Ginkgo House</div>
+          </div>
+          <div class="g-track" style="grid-column:8/10;">
+            <div class="g-bar lodging tbd" title="KOKO HOTEL Premier 10/10–10/11 · 金額未定">KOKO HOTEL</div>
+          </div>
+        </div>
+
+        <div class="gantt-row">
+          <div class="g-label"><span class="dot" style="background:var(--moss)"></span>高爾夫</div>
+          <div class="g-track" style="grid-column:2/3;"></div>
+          <div class="g-track" style="grid-column:3/4;"></div>
+          <div class="g-track" style="grid-column:4/5;"></div>
+          <div class="g-track" style="grid-column:5/6;">
+            <div class="g-bar golf tbd" title="オーソルヴェール軽井沢倶楽部 09:15 開球 · 付款人 TBD">09:15</div>
+          </div>
+          <div class="g-track" style="grid-column:6/7;"></div>
+          <div class="g-track" style="grid-column:7/8;">
+            <div class="g-bar golf tbd" title="GATSBY GOLF CLUB 08:59 開球 · 付款人 TBD">08:59</div>
+          </div>
+          <div class="g-track" style="grid-column:8/9;">
+            <div class="g-bar golf tbd" title="三甲ゴルフ倶楽部 富士コース 07:00 開球 · 付款人 TBD">07:00</div>
+          </div>
+          <div class="g-track" style="grid-column:9/10;"></div>
+        </div>
+
+      </div>
+      <div class="gantt-legend">
+        <span><span class="dot" style="background:var(--vermilion)"></span>交通</span>
+        <span><span class="dot" style="background:var(--indigo)"></span>住宿</span>
+        <span><span class="dot" style="background:var(--moss)"></span>高爾夫</span>
+        <span>虛線框 = 費用付款人待定</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span id="save-status">內容會自動儲存在此瀏覽器</span>
+    <span>編輯內容僅存在這個瀏覽器裡</span>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var KEY = 'japan-golf-trip-v2';
+  var editableEls = document.querySelectorAll('[contenteditable="true"]');
+
+  function saveToStorage(){
+    try{
+      var data = {};
+      editableEls.forEach(function(el, i){ data[i] = el.innerHTML; });
+      localStorage.setItem(KEY, JSON.stringify(data));
+      var status = document.getElementById('save-status');
+      status.textContent = '已儲存 · ' + new Date().toLocaleTimeString('zh-TW');
+    }catch(e){}
+  }
+
+  function loadFromStorage(){
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(!raw) return;
+      var data = JSON.parse(raw);
+      editableEls.forEach(function(el, i){
+        if(data[i] !== undefined) el.innerHTML = data[i];
+      });
+    }catch(e){}
+  }
+
+  loadFromStorage();
+  editableEls.forEach(function(el){
+    el.addEventListener('blur', saveToStorage);
+  });
+
+  // links inside contenteditable cells normally need ctrl/cmd+click to open;
+  // catch plain clicks on the anchor itself and open them directly instead.
+  document.querySelectorAll('.cost-table a[href]').forEach(function(a){
+    a.addEventListener('mousedown', function(e){ e.preventDefault(); });
+    a.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      window.open(a.getAttribute('href'), '_blank', 'noopener');
+    });
+  });
+})();
+</script>
