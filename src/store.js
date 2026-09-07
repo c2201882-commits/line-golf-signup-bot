@@ -625,11 +625,9 @@ const ROSTER_FULL_THRESHOLD = 4;
 
 function rosterEntryLabel(e) {
   const extra = (e.guestNames || []).map((n) => (n || "").trim()).filter(Boolean);
-  const named = [e.displayName, ...extra];
-  const unnamed = Math.max(0, (e.count || 1) - named.length);
-  if (unnamed === 0) return named.join(", ");
-  if (extra.length === 0) return `${e.displayName}*${e.count || 1}`;
-  return `${named.join(", ")} +${unnamed}`;
+  const selfCount = Math.max(1, (e.count || 1) - extra.length);
+  const selfLabel = selfCount > 1 ? `${e.displayName}*${selfCount}` : e.displayName;
+  return [selfLabel, ...extra].join(", ");
 }
 
 function buildRosterText(groupId, mKey, liffId) {
