@@ -16,7 +16,7 @@ function formatSummary(month, mKey, liffUrl) {
   const openLine = liffUrl ? `\n\n👉 打開報名頁：${liffUrl}` : "";
 
   if (dateKeys.length === 0) {
-    return `本月（${mKey}）目前還沒有人報名喔！${openLine || "輸入「9/3 +你的名字」就可以報名了。"}`;
+    return `本月（${mKey}）目前還沒有人報名喔！${openLine || "請聯絡管理員設定報名頁連結。"}`;
   }
 
   const lines = [`⛳ 本月球局彙整（${mKey}）`, ""];
@@ -49,27 +49,16 @@ function formatSummary(month, mKey, liffUrl) {
 
 const HELP_TEXT = `⛳ 球局報名機器人使用說明
 
-【網頁報名，推薦】
-點選下方「開啟報名頁」，用你的 LINE 身份直接選日期、填人數，也能幫朋友多報名額。
+【報名方式】
+點選下方「開啟報名頁」，用你的 LINE 身份登入後，直接在網頁上選日期、填人數即可完成報名。也可以在報名時順便幫朋友多登記人數。
 
-【文字報名，仍可使用】
-9/3 +David
-一行一個日期，+名字 表示報名，可以一行打多個人：
-9/3 +David +Roy +KW
-
-【取消報名】
-9/3 -David
-
-【加備註（球場/時間/人數上限，選填）】
-9/3 長庚5:50 max4 +David +KW
+同一天想開多場球局（例如早團＋午團），或是要更改球場、開球時間，都在網頁上操作。
 
 【查詢本月彙整】
 @球局 查詢　或　@球局 本月
 
 【查看說明】
-@球局 help　或　@球局 說明
-
-文字報名一天只會對到第一團；如果同一天想開第二場球局（例如早團＋午團），請用網頁報名頁操作。重複輸入同一人不會重複計算。`;
+@球局 help　或　@球局 說明`;
 
 function buildMenuQuickReply(liffUrl) {
   const items = [];
