@@ -58,9 +58,19 @@
 | `LINE_CHANNEL_SECRET` | Messaging API 的 channel secret，驗證 webhook 簽章用 |
 | `LIFF_ID` | 報名網頁的 LIFF ID |
 | `LINE_LIFF_CHANNEL_ID` | LIFF app 所屬 channel 的 Channel ID，驗證 id_token 用 |
-| `ADMIN_SECRET` | 保護 `/api/admin/backup`、`/api/admin/restore` 的密鑰 |
+| `ADMIN_SECRET` | 保護 `/api/admin/backup`、`/api/admin/restore`、`/api/admin/broadcast-now` 的密鑰 |
+| `ADMIN_PASSWORD` | 網頁「管理員」登入密碼，預設 `admin` |
 | `DATA_DIR` | 存放 `signups.json` 的資料夾，正式環境請指到掛載的持久化磁碟（例如 Render 的 `/var/data`），本機開發留空即可 |
 | `PORT` | 伺服器監聽的 port（Render 會自動注入，本機開發預設 3000） |
+| `BROADCAST_APP_GROUP_ID` | 每晚自動推播讀取報名資料用的資料命名空間，預設 `default`（跟 LIFF 網頁用的一致），通常不需要設定 |
+
+### 每晚自動推播名單
+
+伺服器會在每天 23:59（Asia/Taipei）自動把「複製名單」的內容推播到 LINE 群組，不需要另外設定排程服務。推播目的地（真正的 LINE 群組 ID）是 bot 第一次在群組裡收到任何訊息時自動記錄下來的，所以部署後**必須先讓 bot 在群組裡看到至少一則訊息**（例如有人 @提及 bot 或打字報名）才會生效。想馬上手動測試，可以打：
+
+```bash
+curl -X POST "https://<your-app>.onrender.com/api/admin/broadcast-now?secret=<ADMIN_SECRET>"
+```
 
 ## 本機開發
 

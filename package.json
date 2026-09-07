@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@line/bot-sdk": "^9.4.1",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "node-cron": "^3.0.3"
   },
   "engines": {
     "node": ">=18"

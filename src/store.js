@@ -588,6 +588,69 @@ function equipItem(groupId, lineUserId, displayName, itemType, itemId) {
   return { ok: true, profile };
 }
 
+// Server-side port of the "複製名單" text built in liff.html's buildCopyText()/
+// entryLabel() — kept in sync by hand since one runs in the browser and the
+// other in the nightly broadcast cron.
+const ROSTER_FULL_THRESHOLD = 4;
+
+function rosterEntryLabel(e) {
+  const extra = (e.guestNames || []).map((n) => (n || "").trim()).filter(Boolean);
+  const named = [e.displayName, ...extra];
+  const unnamed = Math.max(0, (e.count || 1) - named.length);
+  if (unnamed === 0) return named.join(", ");
+  if (extra.length === 0) return `${e.displayName}*${e.count || 1}`;
+  return `${named.join(", ")} +${unnamed}`;
+}
+
+function buildRosterText(groupId, mKey, liffId) {
+  const month = getMonth(groupId, mKey);
+  const [, mStr] = mKey.split("-");
+  const m = Number(mStr);
+
+  const rows = [];
+  Object.keys(month.days || {}).sort().forEach((dateKey) => {
+    (month.days[dateKey].sessions || []).forEach((session) => {
+      const entries = Object.entries(session.entries || {});
+      const count = entries.reduce((sum, [, e]) => sum + (e.count || 1), 0);
+      if (count > 0) rows.push({ dateKey, session, count, entries });
+    });
+  });
+
+  const lines = ["歡迎新朋友報名 "];
+  if (liffId) lines.push(`報名連結：https://liff.line.me/${liffId}`);
+  lines.push(`『${m}月打球開團囉⛳️』`, "");
+
+  rows.forEach((r) => {
+    const day = Number(r.dateKey.split("-")[2]);
+    const names = r.entries.map(([, e]) => rosterEntryLabel(e)).join(", ");
+    const prefix = [r.session.course, r.session.teeTime].filter(Boolean).join(" ");
+    const body = [prefix, names].filter(Boolean).join(" ");
+    const full = r.count >= ROSTER_FULL_THRESHOLD ? " 🈵" : "";
+    lines.push(`『${m}/${day}』：${body}${full}`);
+  });
+
+  return lines.join("\n");
+}
+
+// The LIFF app writes all sign-up data under a fixed app-level groupId
+// ("default"), but pushing a message requires the real LINE group id — only
+// visible via the webhook's event.source.groupId when the bot sees a message
+// in the group. Stashed under a __meta key so it survives restarts without
+// colliding with any real groupId's data.
+function setBroadcastGroupId(groupId) {
+  const data = load();
+  data.__meta = data.__meta || {};
+  if (data.__meta.broadcastGroupId !== groupId) {
+    data.__meta.broadcastGroupId = groupId;
+    save(data);
+  }
+}
+
+function getBroadcastGroupId() {
+  const data = load();
+  return (data.__meta && data.__meta.broadcastGroupId) || null;
+}
+
 module.exports = {
   load,
   save,
@@ -615,5 +678,8 @@ module.exports = {
   adminDeleteSession,
   adminAddProxyEntries,
   adminRemoveProxyEntry,
+  buildRosterText,
+  setBroadcastGroupId,
+  getBroadcastGroupId,
   SHOP_CATALOG,
 };

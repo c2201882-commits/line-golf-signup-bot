@@ -1,12 +1,14 @@
 const path = require("path");
 const express = require("express");
 const line = require("@line/bot-sdk");
+const cron = require("node-cron");
 const { parseMessage } = require("./parser");
 const {
   applyEntries, getMonth, monthKey, canonicalDate, addSession, setVote, setSession, load, save,
   getBoard, addBoardMessage, deleteBoardMessage, setBoardPin, getActivity,
   getStats, getProfiles, getCatalogFor, addCustomTitle, deleteCustomTitle, purchaseItem, equipItem,
   adminDeleteSession, adminAddProxyEntries, adminRemoveProxyEntry,
+  buildRosterText, setBroadcastGroupId, getBroadcastGroupId,
 } = require("./store");
 const { formatSummary, HELP_TEXT, buildMenuQuickReply } = require("./summary");
 const { verifyIdToken } = require("./lineAuth");
@@ -364,7 +366,48 @@ app.post("/api/admin/restore", (req, res) => {
   res.json({ ok: true });
 });
 
+// ---- Nightly roster broadcast -----------------------------------------------
+// Every night at 23:59 (Asia/Taipei), push the same text the "複製名單" button
+// builds to the LINE group. The push destination is learned automatically: the
+// webhook records the real LINE group id the first time it sees any message
+// there (see handleEvent), since the LIFF app itself only ever works with the
+// fixed "default" data namespace, not a real LINE group id.
+const BROADCAST_APP_GROUP_ID = process.env.BROADCAST_APP_GROUP_ID || "default";
+
+async function sendNightlyRoster() {
+  const targetGroupId = getBroadcastGroupId();
+  if (!targetGroupId) {
+    console.warn("Nightly roster broadcast skipped: no LINE group id captured yet (bot needs to see a message in the group first).");
+    return { ok: false, error: "no broadcast group id captured yet" };
+  }
+  const text = buildRosterText(BROADCAST_APP_GROUP_ID, monthKey(), LIFF_ID);
+  await client.pushMessage({ to: targetGroupId, messages: [{ type: "text", text }] });
+  return { ok: true, targetGroupId, text };
+}
+
+cron.schedule("59 23 * * *", () => {
+  sendNightlyRoster().catch((err) => console.error("Nightly roster broadcast failed:", err));
+}, { timezone: "Asia/Taipei" });
+
+// Manual trigger for testing, gated by the same ADMIN_SECRET as backup/restore.
+app.post("/api/admin/broadcast-now", async (req, res) => {
+  if (!checkAdminSecret(req, res)) return;
+  try {
+    const result = await sendNightlyRoster();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 async function handleEvent(event) {
+  // Any event from an actual LINE group tells us its real group id — needed
+  // for the nightly roster push, since the LIFF app itself only knows the
+  // fixed app-level "default" data namespace, not the real group id.
+  if (event.source && event.source.groupId) {
+    setBroadcastGroupId(event.source.groupId);
+  }
+
   if (event.type !== "message" || event.message.type !== "text") return;
 
   const groupId = event.source.groupId || event.source.roomId || event.source.userId;
