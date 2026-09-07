@@ -712,6 +712,17 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   </div>
 </div>
 
+<div class="sheet-backdrop" id="admin-convert-backdrop">
+  <div class="sheet">
+    <h3>轉換為已知使用者</h3>
+    <p class="sheet-sub">選擇這位代客登記的人實際是哪一位曾經用 LINE 報名過的人</p>
+    <div class="session-list" id="admin-convert-list"></div>
+    <div class="sheet-actions">
+      <button type="button" class="ghost" id="admin-convert-close">取消</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet-backdrop" id="admin-broadcast-backdrop">
   <div class="sheet">
     <h3>自動發布名單時間</h3>
@@ -1000,12 +1011,73 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       const info = document.createElement("div"); info.className = "s-info";
       const title = document.createElement("span"); title.className = "s-title"; title.textContent = entry.displayName;
       info.appendChild(title);
+      const convertBtn = document.createElement("button"); convertBtn.type = "button";
+      convertBtn.textContent = "轉換";
+      convertBtn.addEventListener("click", () => openAdminConvertSheet(key));
       const btn = document.createElement("button"); btn.type = "button"; btn.className = "danger";
       btn.textContent = "移除";
       btn.addEventListener("click", () => adminRemoveProxyApi(key));
-      item.appendChild(info); item.appendChild(btn);
+      item.appendChild(info); item.appendChild(convertBtn); item.appendChild(btn);
       adminProxyListEl.appendChild(item);
     });
+  }
+
+  // ---- admin: 把代客登記轉換成已知的 LINE 使用者 ----
+  const adminConvertBackdrop = document.getElementById("admin-convert-backdrop");
+  const adminConvertListEl = document.getElementById("admin-convert-list");
+  let adminConvertEntryKey = null;
+
+  async function openAdminConvertSheet(entryKey) {
+    adminConvertEntryKey = entryKey;
+    adminConvertListEl.innerHTML = "<p class=\"empty-note\">載入中…</p>";
+    adminConvertBackdrop.classList.add("open");
+    try {
+      const res = await fetch(`/api/stats?groupId=${encodeURIComponent(groupId)}`);
+      const data = await res.json();
+      const users = (data.leaderboard || []);
+      adminConvertListEl.innerHTML = "";
+      if (users.length === 0) {
+        adminConvertListEl.innerHTML = "<p class=\"empty-note\">目前還沒有任何人用 LINE 報名過</p>";
+        return;
+      }
+      users.forEach((u) => {
+        const item = document.createElement("div"); item.className = "session-item";
+        const info = document.createElement("div"); info.className = "s-info";
+        const title = document.createElement("span"); title.className = "s-title"; title.textContent = u.displayName;
+        info.appendChild(title);
+        const btn = document.createElement("button"); btn.type = "button"; btn.className = "primary";
+        btn.textContent = "選擇";
+        btn.addEventListener("click", () => adminConvertProxyApi(u));
+        item.appendChild(info); item.appendChild(btn);
+        adminConvertListEl.appendChild(item);
+      });
+    } catch (e) {
+      adminConvertListEl.innerHTML = "<p class=\"empty-note\">載入失敗，請重試</p>";
+    }
+  }
+  function closeAdminConvertSheet() { adminConvertBackdrop.classList.remove("open"); adminConvertEntryKey = null; }
+  document.getElementById("admin-convert-close").addEventListener("click", closeAdminConvertSheet);
+  adminConvertBackdrop.addEventListener("click", (e) => { if (e.target === adminConvertBackdrop) closeAdminConvertSheet(); });
+
+  async function adminConvertProxyApi(user) {
+    if (!confirm(`確定要把這筆代客登記轉換成「${user.displayName}」嗎？`)) return;
+    try {
+      const res = await fetch("/api/admin/session/proxy-convert", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password: adminPassword, groupId, month: monthKey, date: adminProxyDateKey, sessionId: adminProxySessionId,
+          entryKey: adminConvertEntryKey, lineUserId: user.lineUserId, displayName: user.displayName, pictureUrl: user.pictureUrl,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        daysData = data.days; render();
+        closeAdminConvertSheet();
+        renderAdminProxyList();
+      } else {
+        alert(data.error || "轉換失敗");
+      }
+    } catch (e) { alert("網路異常，請重試"); }
   }
 
   document.getElementById("admin-proxy-submit").addEventListener("click", async () => {

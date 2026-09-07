@@ -7,7 +7,7 @@ const {
   applyEntries, getMonth, monthKey, canonicalDate, addSession, setVote, setSession, load, save,
   getBoard, addBoardMessage, deleteBoardMessage, setBoardPin, getActivity,
   getStats, getProfiles, getCatalogFor, addCustomTitle, deleteCustomTitle, purchaseItem, equipItem,
-  adminDeleteSession, adminAddProxyEntries, adminRemoveProxyEntry,
+  adminDeleteSession, adminAddProxyEntries, adminRemoveProxyEntry, adminConvertProxyEntry,
   buildRosterText, setBroadcastGroupId, getBroadcastGroupId,
   getBroadcastTime, setBroadcastTime, getLastBroadcastDate, setLastBroadcastDate,
 } = require("./store");
@@ -299,6 +299,17 @@ app.post("/api/admin/session/proxy-remove", (req, res) => {
   }
   const monthData = adminRemoveProxyEntry(groupId, month, date, sessionId, entryKey);
   res.json({ days: monthData.days });
+});
+
+app.post("/api/admin/session/proxy-convert", (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  const { groupId, month, date, sessionId, entryKey, lineUserId, displayName, pictureUrl } = req.body || {};
+  if (!groupId || !month || !date || !sessionId || !entryKey || !lineUserId) {
+    return res.status(400).json({ error: "groupId, month, date, sessionId, entryKey, lineUserId are required" });
+  }
+  const result = adminConvertProxyEntry(groupId, month, date, sessionId, entryKey, lineUserId, displayName, pictureUrl);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  res.json({ days: result.month.days });
 });
 
 app.post("/api/admin/board/delete", (req, res) => {

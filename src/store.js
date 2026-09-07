@@ -359,6 +359,36 @@ function adminRemoveProxyEntry(groupId, mKey, dateKey, sessionId, entryKey) {
   return month ? migrateMonthDays(month) : { days: {} };
 }
 
+// Attaches a real LINE identity to a previously proxy-registered ("name:")
+// entry — e.g. someone the admin registered by name before they'd used the
+// LIFF app themselves. Refuses if that LINE user already has their own entry
+// in the same session, since merging counts/guestNames automatically would
+// be surprising; the admin removes one manually first in that case.
+function adminConvertProxyEntry(groupId, mKey, dateKey, sessionId, entryKey, lineUserId, displayName, pictureUrl) {
+  const data = load();
+  const month = data[groupId] && data[groupId][mKey];
+  const day = month && month.days[dateKey];
+  const session = day && (day.sessions || []).find((s) => s.id === sessionId);
+  if (!session || !session.entries[entryKey] || !entryKey.startsWith("name:")) {
+    return { ok: false, error: "proxy entry not found" };
+  }
+  const targetKey = lineKey(lineUserId);
+  if (session.entries[targetKey]) {
+    return { ok: false, error: "this LINE user already has their own entry in this session" };
+  }
+  const proxy = session.entries[entryKey];
+  session.entries[targetKey] = {
+    displayName: displayName || proxy.displayName,
+    pictureUrl: pictureUrl || null,
+    count: proxy.count || 1,
+    guestNames: proxy.guestNames || [],
+    updatedAt: Date.now(),
+  };
+  delete session.entries[entryKey];
+  save(data);
+  return { ok: true, month: migrateMonthDays(month) };
+}
+
 // ---- stats: honor board + friendship pairs ---------------------------------
 // Derived read-only from every session across every month for this group —
 // nothing extra is stored. "count" here means "times signed up", not
@@ -711,6 +741,7 @@ module.exports = {
   adminDeleteSession,
   adminAddProxyEntries,
   adminRemoveProxyEntry,
+  adminConvertProxyEntry,
   buildRosterText,
   setBroadcastGroupId,
   getBroadcastGroupId,
