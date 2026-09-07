@@ -502,6 +502,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
           <button type="button" id="logout-btn">登出 / 切換帳號</button>
           <button type="button" id="admin-btn">管理員</button>
           <button type="button" id="admin-logout-btn" hidden>登出管理員</button>
+          <button type="button" id="menu-broadcast-settings-btn" hidden>自動發布名單時間</button>
         </div>
       </div>
     </div>
@@ -711,6 +712,20 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
   </div>
 </div>
 
+<div class="sheet-backdrop" id="admin-broadcast-backdrop">
+  <div class="sheet">
+    <h3>自動發布名單時間</h3>
+    <p class="sheet-sub">每天固定時間，會自動把「複製名單」的內容發到 LINE 群組（台灣時間）</p>
+    <div class="session-fields">
+      <input type="time" id="admin-broadcast-time-input" />
+    </div>
+    <div class="sheet-actions">
+      <button type="button" class="ghost" id="admin-broadcast-close">關閉</button>
+      <button type="button" class="primary" id="admin-broadcast-save">儲存</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet-backdrop" id="admin-login-backdrop">
   <div class="sheet">
     <h3>管理員登入</h3>
@@ -888,6 +903,7 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
         connText.textContent = "管理員模式已啟用";
         document.getElementById("admin-btn").hidden = true;
         document.getElementById("admin-logout-btn").hidden = false;
+        document.getElementById("menu-broadcast-settings-btn").hidden = false;
         if (boardLoaded) renderBoard();
         if (document.getElementById("admin-title-form")) document.getElementById("admin-title-form").hidden = false;
       } else {
@@ -901,9 +917,43 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
     accountMenu.classList.remove("open");
     document.getElementById("admin-btn").hidden = false;
     document.getElementById("admin-logout-btn").hidden = true;
+    document.getElementById("menu-broadcast-settings-btn").hidden = true;
     connText.textContent = "已登出管理員模式";
     if (document.getElementById("admin-title-form")) document.getElementById("admin-title-form").hidden = true;
     if (boardLoaded) renderBoard();
+  });
+
+  // ---- admin: 自動發布名單時間 ----
+  const adminBroadcastBackdrop = document.getElementById("admin-broadcast-backdrop");
+  const adminBroadcastTimeInput = document.getElementById("admin-broadcast-time-input");
+
+  document.getElementById("menu-broadcast-settings-btn").addEventListener("click", async () => {
+    accountMenu.classList.remove("open");
+    try {
+      const res = await fetch("/api/admin/broadcast-time");
+      const data = await res.json();
+      adminBroadcastTimeInput.value = data.time || "23:59";
+    } catch (e) { adminBroadcastTimeInput.value = "23:59"; }
+    adminBroadcastBackdrop.classList.add("open");
+  });
+  document.getElementById("admin-broadcast-close").addEventListener("click", () => adminBroadcastBackdrop.classList.remove("open"));
+  adminBroadcastBackdrop.addEventListener("click", (e) => { if (e.target === adminBroadcastBackdrop) adminBroadcastBackdrop.classList.remove("open"); });
+  document.getElementById("admin-broadcast-save").addEventListener("click", async () => {
+    const time = adminBroadcastTimeInput.value;
+    if (!time) return;
+    try {
+      const res = await fetch("/api/admin/broadcast-time", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: adminPassword, time }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        adminBroadcastBackdrop.classList.remove("open");
+        connText.textContent = `自動發布時間已設為 ${data.time}`;
+      } else {
+        alert(data.error || "設定失敗");
+      }
+    } catch (e) { alert("網路異常，請重試"); }
   });
 
   async function adminDeleteSessionApi(dateKey, sessionId) {

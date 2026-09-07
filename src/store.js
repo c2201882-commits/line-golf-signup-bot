@@ -651,6 +651,39 @@ function getBroadcastGroupId() {
   return (data.__meta && data.__meta.broadcastGroupId) || null;
 }
 
+const DEFAULT_BROADCAST_TIME = "23:59";
+
+function getBroadcastTime() {
+  const data = load();
+  return (data.__meta && data.__meta.broadcastTime) || DEFAULT_BROADCAST_TIME;
+}
+
+// time: "HH:mm", 24-hour. Returns { ok: true, time } or { ok: false, error }.
+function setBroadcastTime(time) {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time || "")) {
+    return { ok: false, error: "time must be HH:mm (24-hour)" };
+  }
+  const data = load();
+  data.__meta = data.__meta || {};
+  data.__meta.broadcastTime = time;
+  save(data);
+  return { ok: true, time };
+}
+
+// Guards the per-minute cron check from sending twice in the same day (e.g.
+// if the server restarts right around the target minute).
+function getLastBroadcastDate() {
+  const data = load();
+  return (data.__meta && data.__meta.lastBroadcastDate) || null;
+}
+
+function setLastBroadcastDate(dateStr) {
+  const data = load();
+  data.__meta = data.__meta || {};
+  data.__meta.lastBroadcastDate = dateStr;
+  save(data);
+}
+
 module.exports = {
   load,
   save,
@@ -681,5 +714,9 @@ module.exports = {
   buildRosterText,
   setBroadcastGroupId,
   getBroadcastGroupId,
+  getBroadcastTime,
+  setBroadcastTime,
+  getLastBroadcastDate,
+  setLastBroadcastDate,
   SHOP_CATALOG,
 };

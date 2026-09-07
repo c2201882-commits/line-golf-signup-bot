@@ -9,6 +9,7 @@ const {
   getStats, getProfiles, getCatalogFor, addCustomTitle, deleteCustomTitle, purchaseItem, equipItem,
   adminDeleteSession, adminAddProxyEntries, adminRemoveProxyEntry,
   buildRosterText, setBroadcastGroupId, getBroadcastGroupId,
+  getBroadcastTime, setBroadcastTime, getLastBroadcastDate, setLastBroadcastDate,
 } = require("./store");
 const { formatSummary, HELP_TEXT, buildMenuQuickReply } = require("./summary");
 const { verifyIdToken } = require("./lineAuth");
@@ -367,11 +368,12 @@ app.post("/api/admin/restore", (req, res) => {
 });
 
 // ---- Nightly roster broadcast -----------------------------------------------
-// Every night at 23:59 (Asia/Taipei), push the same text the "複製名單" button
-// builds to the LINE group. The push destination is learned automatically: the
-// webhook records the real LINE group id the first time it sees any message
-// there (see handleEvent), since the LIFF app itself only ever works with the
-// fixed "default" data namespace, not a real LINE group id.
+// Every day at an admin-configurable time (Asia/Taipei, default 23:59), push
+// the same text the "複製名單" button builds to the LINE group. The push
+// destination is learned automatically: the webhook records the real LINE
+// group id the first time it sees any message there (see handleEvent), since
+// the LIFF app itself only ever works with the fixed "default" data
+// namespace, not a real LINE group id.
 const BROADCAST_APP_GROUP_ID = process.env.BROADCAST_APP_GROUP_ID || "default";
 
 async function sendNightlyRoster() {
@@ -385,9 +387,28 @@ async function sendNightlyRoster() {
   return { ok: true, targetGroupId, text };
 }
 
-cron.schedule("59 23 * * *", () => {
-  sendNightlyRoster().catch((err) => console.error("Nightly roster broadcast failed:", err));
-}, { timezone: "Asia/Taipei" });
+// The broadcast time is stored in the data file (admin-editable from the web
+// app), not a fixed cron expression, so checking every minute against it is
+// simpler than re-registering a cron job whenever the setting changes.
+// lastBroadcastDate guards against firing twice in the same minute-window
+// (e.g. a restart right at the target time).
+cron.schedule("* * * * *", async () => {
+  try {
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Taipei", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false,
+    }).formatToParts(now).reduce((acc, p) => ((acc[p.type] = p.value), acc), {});
+    const today = `${parts.year}-${parts.month}-${parts.day}`;
+    const nowHHmm = `${parts.hour}:${parts.minute}`;
+
+    if (nowHHmm === getBroadcastTime() && getLastBroadcastDate() !== today) {
+      setLastBroadcastDate(today);
+      await sendNightlyRoster();
+    }
+  } catch (err) {
+    console.error("Nightly roster broadcast failed:", err);
+  }
+});
 
 // Identify which LINE Official Account this deployment's channel access token
 // belongs to (displayName/basicId/pictureUrl) — useful when you're not sure
@@ -404,6 +425,17 @@ app.get("/api/admin/bot-info", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
+});
+
+app.get("/api/admin/broadcast-time", (req, res) => {
+  res.json({ time: getBroadcastTime() });
+});
+
+app.post("/api/admin/broadcast-time", (req, res) => {
+  if (!checkAdminPassword(req, res)) return;
+  const result = setBroadcastTime((req.body || {}).time);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  res.json({ time: result.time });
 });
 
 // Manual trigger for testing, gated by the same ADMIN_SECRET as backup/restore.
