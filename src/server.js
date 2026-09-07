@@ -389,6 +389,23 @@ cron.schedule("59 23 * * *", () => {
   sendNightlyRoster().catch((err) => console.error("Nightly roster broadcast failed:", err));
 }, { timezone: "Asia/Taipei" });
 
+// Identify which LINE Official Account this deployment's channel access token
+// belongs to (displayName/basicId/pictureUrl) — useful when you're not sure
+// which bot in your LINE contact list is the one this app is talking to.
+app.get("/api/admin/bot-info", async (req, res) => {
+  if (!checkAdminSecret(req, res)) return;
+  try {
+    const lineRes = await fetch("https://api.line.me/v2/bot/info", {
+      headers: { Authorization: `Bearer ${config.channelAccessToken}` },
+    });
+    const data = await lineRes.json();
+    if (!lineRes.ok) return res.status(lineRes.status).json(data);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 // Manual trigger for testing, gated by the same ADMIN_SECRET as backup/restore.
 app.post("/api/admin/broadcast-now", async (req, res) => {
   if (!checkAdminSecret(req, res)) return;
