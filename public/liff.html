@@ -52,25 +52,6 @@ body {
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
-.hero {
-  min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  text-align: center; padding: 40px 20px; gap: 18px;
-}
-.hero .hero-mark { font-size: 40px; }
-.hero h2 {
-  font-family: "Zen Maru Gothic", sans-serif; font-weight: 500; font-size: clamp(24px, 6vw, 34px);
-  margin: 0; text-wrap: balance; letter-spacing: 0.02em;
-}
-.hero p { font-size: 14px; color: var(--muted); margin: 0; max-width: 320px; line-height: 1.7; }
-.hero .scroll-cue {
-  position: absolute; bottom: 28px; display: flex; flex-direction: column; align-items: center; gap: 6px;
-  background: none; border: none; color: var(--muted); cursor: pointer; font-family: inherit; font-size: 12px;
-}
-.hero-wrap { position: relative; }
-.scroll-arrow { font-size: 18px; animation: bob 1.8s ease-in-out infinite; }
-@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
-@media (prefers-reduced-motion: reduce) { .scroll-arrow { animation: none; } }
-
 .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
 
 header.top {
@@ -462,16 +443,6 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
 </style>
 </head>
 <body>
-<div class="hero-wrap">
-  <section class="hero">
-    <h2>少年銀龍團⛳️🐟</h2>
-    <p>選日期、填人數，也能幫朋友一起報名。向下滑動開始使用。</p>
-  </section>
-  <button type="button" class="scroll-cue" id="scroll-cue">
-    <span class="scroll-arrow">︾</span>
-    開始使用
-  </button>
-</div>
 <div class="wrap" id="main-content">
   <header class="top">
     <div>
@@ -789,10 +760,6 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
 
 <script>
 (function () {
-  document.getElementById("scroll-cue").addEventListener("click", () => {
-    document.getElementById("main-content").scrollIntoView({ behavior: "smooth" });
-  });
-
   const WEEKDAY_NAMES = ["日", "一", "二", "三", "四", "五", "六"];
   function pad(n) { return String(n).padStart(2, "0"); }
 
