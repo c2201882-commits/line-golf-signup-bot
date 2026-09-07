@@ -459,9 +459,9 @@ async function handleEvent(event) {
   }
 
   if (isQueryCommand) {
-    const mKey = monthKey();
-    const month = getMonth(groupId, mKey);
-    return reply(replyToken, formatSummary(month, mKey, liffUrlForGroup(groupId)), quickReply);
+    // Read from the LIFF app's actual data namespace, not this chat's own
+    // groupId — all real sign-ups live under BROADCAST_APP_GROUP_ID ("default").
+    return reply(replyToken, buildRosterText(BROADCAST_APP_GROUP_ID, monthKey(), LIFF_ID), quickReply);
   }
 
   const entries = parseMessage(text);
