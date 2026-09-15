@@ -449,6 +449,24 @@ app.get("/api/admin/bot-info", async (req, res) => {
   }
 });
 
+// LINE's push message quota (relevant if pushes start failing with 429) —
+// free/developer plans have a monthly cap on push messages sent.
+app.get("/api/admin/message-quota", async (req, res) => {
+  if (!checkAdminSecret(req, res)) return;
+  try {
+    const headers = { Authorization: `Bearer ${config.channelAccessToken}` };
+    const [quotaRes, usedRes] = await Promise.all([
+      fetch("https://api.line.me/v2/bot/message/quota", { headers }),
+      fetch("https://api.line.me/v2/bot/message/quota/consumption", { headers }),
+    ]);
+    const quota = await quotaRes.json();
+    const used = await usedRes.json();
+    res.json({ quota, used });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 app.get("/api/admin/broadcast-time", (req, res) => {
   res.json({ time: getBroadcastTime() });
 });
