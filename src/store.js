@@ -653,7 +653,7 @@ function buildRosterText(groupId, mKey, liffId) {
     const names = r.entries.map(([, e]) => rosterEntryLabel(e)).join(", ");
     const prefix = [r.session.course, r.session.teeTime].filter(Boolean).join(" ");
     const body = [prefix, names].filter(Boolean).join(" ");
-    const full = r.count >= ROSTER_FULL_THRESHOLD ? " 🈵" : "";
+    const full = r.count > 0 && r.count % ROSTER_FULL_THRESHOLD === 0 ? " 🈵" : "";
     lines.push(`『${m}/${day}』：${body}${full}`);
   });
 

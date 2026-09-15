@@ -1358,7 +1358,9 @@ footer.note { margin-top: 28px; font-size: 11.5px; color: var(--muted); text-ali
       const names = sessionEntries(r.session).map(([, e]) => entryLabel(e)).join(", ");
       const prefix = [r.session.course, r.session.teeTime].filter(Boolean).join(" ");
       const body = [prefix, names].filter(Boolean).join(" ");
-      const full = r.count >= FULL_THRESHOLD ? " 🈵" : "";
+      // Full only lands on an exact multiple of 4 (one full flight) — 5-7 people
+      // is a full flight plus a partial second one, not "full".
+      const full = r.count > 0 && r.count % FULL_THRESHOLD === 0 ? " 🈵" : "";
       lines.push(`『${target.month + 1}/${r.dt.day}』：${body}${full}`);
     });
     return lines.join("\n");
