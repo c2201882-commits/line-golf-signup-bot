@@ -394,7 +394,11 @@ async function sendNightlyRoster() {
     return { ok: false, error: "no broadcast group id captured yet" };
   }
   const text = buildRosterText(BROADCAST_APP_GROUP_ID, monthKey(), LIFF_ID);
-  await client.pushMessage({ to: targetGroupId, messages: [{ type: "text", text }] });
+  try {
+    await client.pushMessage({ to: targetGroupId, messages: [{ type: "text", text }] });
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
   return { ok: true, targetGroupId, text };
 }
 
@@ -413,8 +417,15 @@ cron.schedule("* * * * *", async () => {
     const nowHHmm = `${parts.hour}:${parts.minute}`;
 
     if (nowHHmm === getBroadcastTime() && getLastBroadcastDate() !== today) {
-      setLastBroadcastDate(today);
-      await sendNightlyRoster();
+      // Only mark the day as sent AFTER a successful push — marking it first
+      // meant a failed send (network hiccup, LINE API error) silently gave up
+      // for the rest of the day with nothing ever arriving in the group.
+      const result = await sendNightlyRoster();
+      if (result.ok) {
+        setLastBroadcastDate(today);
+      } else {
+        console.error("Nightly roster broadcast did not send, will retry next minute:", result.error);
+      }
     }
   } catch (err) {
     console.error("Nightly roster broadcast failed:", err);
